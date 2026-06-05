@@ -2,33 +2,55 @@
 
 [![CI](https://github.com/neoastra303/DevHub_Platform/actions/workflows/ci.yml/badge.svg)](https://github.com/neoastra303/DevHub_Platform/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python: 3.13](https://img.shields.io/badge/Python-3.13-blue.svg)](https://www.python.org/downloads/release/python-3130/)
+[![Django: 6.0](https://img.shields.io/badge/Django-6.0-green.svg)](https://docs.djangoproject.com/en/6.0/)
 
-DevHub is a production-ready Django platform designed to showcase advanced back-end engineering, database architecture, and DevOps practices.
+DevHub is a production-hardened Django platform designed to demonstrate advanced back-end engineering, robust API design, and modern DevOps practices. It provides a multi-tenant workspace for developers to manage projects, posts, and transactions with full auditability and security.
 
 Created and maintained by [neoastra303](https://github.com/neoastra303).
 
-## 🚀 Key Engineering Features
+---
 
-- **Multi-Tenant Architecture:** Per-user isolated dashboards, feeds, and project management.
-- **RESTful API (DRF):** Fully authenticated API with custom serializers, viewsets, and structured error handling.
-- **Production Hardening:** 
-  - **Security:** HSTS, Secure Cookies, XSS Filtering, and CSRF protection.
-  - **Rate Limiting:** IP-based throttling for Login, Signup, and API write operations.
-  - **Audit Logging:** System-wide audit trail for critical entity lifecycle events (Create/Update/Delete).
-- **Asynchronous Workflows:** Custom background job system for resource-intensive tasks (e.g., Audit Exports).
-- **API Documentation:** Integrated **Swagger** and **Redoc** via `drf-spectacular` for standardized OpenAPI documentation.
-- **DevOps & Containerization:** 
-  - **Dockerized:** Multi-container setup (Django + PostgreSQL) using Docker Compose.
-  - **Health Monitoring:** Dedicated health check endpoint for zero-downtime deployments.
-  - **CI/CD:** GitHub Actions for automated testing, migration consistency, and security checks.
+## 🏛️ Architecture & Design
+
+This project goes beyond basic CRUD, implementing enterprise patterns such as:
+- **Service Layer Pattern:** Business logic decoupled from views.
+- **Relational Taxonomy:** Normalized many-to-many schema for skills and tech stacks.
+- **Advanced Security:** Custom throttling, multi-tenant isolation, and automated audit trails.
+
+**For a deep dive into the system design, see [ARCHITECTURE.md](ARCHITECTURE.md).**
+
+---
+
+## 🚀 Key Features
+
+### 🔹 Advanced Backend Engineering
+- **Multi-Tenant Isolation:** Data is strictly scoped to the owner using custom Mixins and Permission classes.
+- **Audit Logging System:** Automated tracking of all Create/Update/Delete actions with rich metadata.
+- **Background Jobs:** Asynchronous workflow for resource-heavy tasks like audit log exports.
+- **Standardized API Contracts:** Unified error handling and response structures for a professional API consumer experience.
+
+### 🔹 Security & Protection
+- **Dual-Layer Throttling:** Configurable burst and sustained rate limits for API write operations.
+- **IP-Based Protection:** Rate limiting on sensitive endpoints like Login and Signup.
+- **Production Hardening:** HSTS, Secure Cookies, XSS filtering, and CSRF protection are active by default.
+
+### 🔹 DevOps & Quality Assurance
+- **Dockerized Ecosystem:** Multi-container orchestration (Django + PostgreSQL) with health-check-dependent startup.
+- **Automated CI/CD:** GitHub Actions pipeline running `Ruff` (linting), `Bandit` (security scanning), and full test suites.
+- **API Documentation:** Integrated **Swagger UI** and **Redoc** for standardized OpenAPI 3.0 documentation.
+
+---
 
 ## 🛠️ Tech Stack
 
-- **Backend:** Django 6.0, Django REST Framework
-- **Database:** PostgreSQL (Production), SQLite (Development)
-- **Containerization:** Docker, Docker Compose
-- **Documentation:** OpenAPI 3.0 (Swagger/Redoc)
-- **CI/CD:** GitHub Actions
+- **Framework:** Django 6.0 & Django REST Framework (DRF)
+- **Database:** PostgreSQL (Production), SQLite (Local Dev)
+- **Tooling:** Docker & Docker Compose
+- **Quality:** Ruff, Bandit, GitHub Actions
+- **API Docs:** drf-spectacular (OpenAPI 3.0)
+
+---
 
 ## 🚦 Getting Started
 
@@ -39,47 +61,26 @@ docker-compose up --build
 ```
 The application will be available at `http://localhost:8000`.
 
-### Manual Local Setup
-
-1. **Install Dependencies:**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # or venv\Scripts\activate on Windows
-   pip install -r requirements.txt
-   ```
-
-2. **Environment Configuration:**
-   Copy `.env.example` to `.env` and configure your variables.
-
-3. **Database Setup:**
-   ```bash
-   python manage.py migrate
-   ```
-
-4. **Run Server:**
-   ```bash
-   python manage.py runserver
-   ```
-
-## 📖 API Documentation
-
+### API Documentation
+Once running, explore the API through:
 - **Swagger UI:** `/api/docs/swagger/`
 - **Redoc:** `/api/docs/redoc/`
-- **OpenAPI Schema:** `/api/schema/`
 
-## 🧪 Testing & Quality Assurance
+---
+
+## 🧪 Testing & Validation
 
 ```bash
-# Run full test suite
+# Run full test suite (Django + REST API)
 python manage.py test
 
-# Process background jobs manually
-python manage.py process_jobs
+# Run security scan
+bandit -r . -x ./venv
 
-# Check system health
-curl http://localhost:8000/health/
+# Lint and format
+ruff check . --fix
 ```
 
-## 🔒 Security & Compliance
+## 🔒 Security
 
-The platform implements industry-standard security headers and best practices to ensure data integrity and user protection. Audit logs provide a transparent history of all administrative actions.
+For reporting vulnerabilities, please refer to our [Security Policy](SECURITY.md).
