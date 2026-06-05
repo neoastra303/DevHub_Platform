@@ -4,24 +4,25 @@ This document outlines the architectural patterns, technical decisions, and secu
 
 ## 🏛️ System Architecture
 
-DevHub follows a decoupled, service-oriented monolithic architecture built on Django.
+DevHub follows a decoupled, service-oriented monolithic architecture built on Django 6.0+.
 
 ### 1. Service Layer Pattern
 To maintain lean models and views, business logic is encapsulated within the `services.py` and `jobs.py` modules. 
-- **Bootstrapping:** Automated idempotent data seeding.
+- **Custom User Model:** Implements `AbstractUser` for long-term scalability and better field control—a critical real-world best practice.
+- **Bootstrapping:** Automated idempotent data seeding to ensure a consistent developer and demo experience.
 - **Background Processing:** Decoupled job execution for resource-intensive operations (e.g., CSV exports).
 
 ### 2. Relational Database Design
 The schema is designed for scalability and data integrity:
 - **Abstract Base Models:** `TimestampedModel` ensures consistent audit trailing across all entities.
 - **Normalized Taxonomy:** `Skill` and `Technology` are implemented as independent entities with many-to-many relationships, optimized via `prefetch_related`.
-- **Slug Management:** Automated, collision-resistant slug generation for SEO-friendly and user-friendly URLs.
+- **Social Graph:** Includes `Comment` and `Notification` models to demonstrate relational complexity and user interaction patterns.
 
 ### 3. API Design & Standardized Contracts
-The REST API is powered by Django REST Framework (DRF) with a focus on consistency:
+The REST API is powered by Django REST Framework (DRF) 3.17+:
 - **Unified Exception Handling:** A custom `devhub_exception_handler` ensures every error response follows a predictable `{ "ok": False, "error": { ... } }` contract.
+- **Advanced Filtering:** Integration of `django-filter` and `SearchFilter` for complex query logic (e.g., date ranges, technology-specific searches, and full-text search).
 - **Throttling Strategy:** Dual-layer throttling using `ApiWriteThrottle` (30/hr) and `ApiBurstThrottle` (120/hr) to protect system resources.
-- **Query Validation:** Custom `QueryValidationMixin` for rigorous validation of pagination and ordering parameters.
 
 ## 🛡️ Security & Observability
 
@@ -36,18 +37,19 @@ The platform implements a comprehensive **Audit Trail**:
 - **API Audit:** Specific metadata flags identify actions originating from the REST API vs. the Web UI.
 
 ### 3. Hardened Security Configuration
-- **HSTS & Secure Cookies:** Enforced in production to prevent session hijacking and man-in-the-middle attacks.
-- **Rate Limiting:** IP-based throttling for sensitive endpoints (Login/Signup) to mitigate brute-force attacks.
+- **HSTS & Secure Cookies:** Enforced in production to prevent session hijacking.
+- **Environment Management:** Utilizes `django-environ` for 12-factor app configuration, ensuring secrets never touch the codebase.
 
 ## ⚙️ DevOps & CI/CD
 
-### 1. Containerization
+### 1. Containerization & Production Edge
 - **Multi-Container Setup:** Docker Compose orchestrates the Django application and a PostgreSQL database.
-- **Health Checks:** Native Docker health checks ensure the database is ready before the application starts.
+- **Static File Serving:** Integrated **WhiteNoise** with Gzip compression and cache-busting for high-performance production static serving.
+- **Gunicorn:** Configured as the WSGI HTTP Server for production scaling.
 
 ### 2. Continuous Integration
 The GitHub Actions pipeline (`ci.yml`) enforces three pillars of quality:
-- **Linting:** `Ruff` for Pythonic code standards.
+- **Linting:** `Ruff` for high-performance Pythonic code standards.
 - **Security:** `Bandit` for static analysis of security vulnerabilities.
 - **Functional Testing:** Full Django test suite with automated migration checks.
 

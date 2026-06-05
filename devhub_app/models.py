@@ -1,9 +1,22 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils.text import slugify
+
+
+class User(AbstractUser):
+    """
+    Custom User model to allow for future flexibility and demonstrate
+    real-world best practices.
+    """
+
+    email = models.EmailField(unique=True)
+
+    def __str__(self):
+        return self.username
 
 
 class TimestampedModel(models.Model):
@@ -204,6 +217,33 @@ class BackgroundJob(TimestampedModel):
 
     def __str__(self):
         return f"{self.job_type}:{self.status}:{self.pk}"
+
+
+class Comment(TimestampedModel):
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="comments")
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="comments", null=True, blank=True)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="comments", null=True, blank=True)
+    content = models.TextField()
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Comment by {self.author.username} on {self.post or self.project}"
+
+
+class Notification(TimestampedModel):
+    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications")
+    title = models.CharField(max_length=100)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    link = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Notification for {self.recipient.username}: {self.title}"
 
 
 @receiver(post_save, sender=get_user_model())

@@ -1,22 +1,24 @@
 import os
 from pathlib import Path
 
-from django.core.management.utils import get_random_secret_key
+import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
+env = environ.Env(
+    DJANGO_DEBUG=(bool, False),
+    DJANGO_SECRET_KEY=(str, "fallback-secret-key-for-dev"),
+    DJANGO_ALLOWED_HOSTS=(list, ["127.0.0.1", "localhost"]),
+)
 
-def _bool_env(name: str, default: bool) -> bool:
-    return os.getenv(name, str(default)).lower() in {"1", "true", "yes", "on"}
+# Read .env file if it exists
+env_file = BASE_DIR / ".env"
+if env_file.exists():
+    env.read_env(str(env_file))
 
-
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", get_random_secret_key())
-DEBUG = _bool_env("DJANGO_DEBUG", False)
-ALLOWED_HOSTS = [
-    host.strip()
-    for host in os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
-    if host.strip()
-]
+SECRET_KEY = env("DJANGO_SECRET_KEY")
+DEBUG = env("DJANGO_DEBUG")
+ALLOWED_HOSTS = env("DJANGO_ALLOWED_HOSTS")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -24,15 +26,19 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
+    "whitenoise.runserver_nostatic",
     "django.contrib.staticfiles",
     "corsheaders",
     "rest_framework",
     "rest_framework.authtoken",
+    "django_filters",
+    "drf_spectacular",
     "devhub_app",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -43,6 +49,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = "core.urls"
+AUTH_USER_MODEL = "devhub_app.User"
 
 TEMPLATES = [
     {
@@ -64,14 +71,7 @@ ASGI_APPLICATION = "core.asgi.application"
 
 default_sqlite_path = BASE_DIR / "db.sqlite3"
 DATABASES = {
-    "default": {
-        "ENGINE": os.getenv("DJANGO_DB_ENGINE", "django.db.backends.sqlite3"),
-        "NAME": os.getenv("DJANGO_DB_NAME", str(default_sqlite_path)),
-        "USER": os.getenv("DJANGO_DB_USER", ""),
-        "PASSWORD": os.getenv("DJANGO_DB_PASSWORD", ""),
-        "HOST": os.getenv("DJANGO_DB_HOST", ""),
-        "PORT": os.getenv("DJANGO_DB_PORT", ""),
-    }
+    "default": env.db("DJANGO_DB_URL", default=f"sqlite:///{default_sqlite_path}"),
 }
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -82,21 +82,18 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LANGUAGE_CODE = "en-us"
-TIME_ZONE = os.getenv("DJANGO_TIME_ZONE", "UTC")
+TIME_ZONE = env("DJANGO_TIME_ZONE", default="UTC")
 USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-CORS_ALLOWED_ORIGINS = [
-    origin.strip()
-    for origin in os.getenv("DJANGO_CORS_ALLOWED_ORIGINS", "http://127.0.0.1:8000,http://localhost:8000").split(",")
-    if origin.strip()
-]
+CORS_ALLOWED_ORIGINS = env.list("DJANGO_CORS_ALLOWED_ORIGINS", default=["http://127.0.0.1:8000", "http://localhost:8000"])
 
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "devhub_app:dashboard"
@@ -109,6 +106,11 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+    "DEFAULT_FILTER_BACKENDS": (
+        "django_filters.rest_framework.DjangoFilterBackend",
+        "rest_framework.filters.SearchFilter",
+        "rest_framework.filters.OrderingFilter",
+    ),
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 10,
     "EXCEPTION_HANDLER": "devhub_app.api.devhub_exception_handler",
@@ -122,8 +124,8 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
 }
 
-DEVHUB_API_WRITE_RATE = os.getenv("DEVHUB_API_WRITE_RATE", "30/hour")
-DEVHUB_API_BURST_RATE = os.getenv("DEVHUB_API_BURST_RATE", "120/hour")
+DEVHUB_API_WRITE_RATE = env("DEVHUB_API_WRITE_RATE", default="30/hour")
+DEVHUB_API_BURST_RATE = env("DEVHUB_API_BURST_RATE", default="120/hour")
 
 CACHES = {
     "default": {

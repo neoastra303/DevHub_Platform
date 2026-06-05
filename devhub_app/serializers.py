@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import AuditLog, BackgroundJob, Post, Profile, Project, TransactionLog
+from .models import AuditLog, BackgroundJob, Post, Profile, Project, TransactionLog, Comment, Notification
 
 
 class PostSerializer(serializers.ModelSerializer):
@@ -138,3 +138,19 @@ class BackgroundJobSerializer(serializers.ModelSerializer):
     class Meta:
         model = BackgroundJob
         fields = ("id", "job_type", "status", "payload", "result", "error_message", "created_at", "updated_at")
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    author_name = serializers.CharField(source="author.get_full_name", read_only=True)
+
+    class Meta:
+        model = Comment
+        fields = ("id", "author_name", "post", "project", "content", "created_at")
+        read_only_fields = ("id", "created_at", "author_name")
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ("id", "title", "message", "is_read", "link", "created_at")
+        read_only_fields = ("id", "created_at")

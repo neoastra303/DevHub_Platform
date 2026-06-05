@@ -14,17 +14,20 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DeleteView, UpdateView
-from rest_framework import permissions, viewsets
+from rest_framework import permissions, viewsets, filters
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
+from django_filters.rest_framework import DjangoFilterBackend
+
 from .audit import record_audit_event
+from .filters import PostFilter, ProjectFilter
 from .forms import PostForm, ProfileForm, ProjectForm, SignUpForm, TransactionLogForm
 from .jobs import enqueue_audit_export_job
 from .mixins import QueryValidationMixin
-from .models import AuditLog, BackgroundJob, Post, Project, TransactionLog
+from .models import AuditLog, BackgroundJob, Post, Project, TransactionLog, Comment, Notification
 from .permissions import IsOwnerObjectPermission
 from .serializers import (
     AuditLogSerializer,
@@ -35,6 +38,8 @@ from .serializers import (
     ProjectSerializer,
     ProjectWriteSerializer,
     TransactionLogSerializer,
+    CommentSerializer,
+    NotificationSerializer,
 )
 from .services import bootstrap_demo_user
 from .throttling import ApiBurstThrottle, ApiWriteThrottle, check_ip_rate_limit
@@ -556,3 +561,29 @@ def transaction_list(request):
     if ordering in allowed_ordering:
         transactions = transactions.order_by(ordering)
     return _paginate_response(request, transactions, TransactionLogSerializer)
+
+
+class CommentViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated, IsOwnerObjectPermission]
+    serializer_class = CommentSerializer
+
+    def get_queryset(self):
+        return Comment.objects.filter(author=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+
+class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = NotificationSerializer
+
+    def get_queryset(self):
+        return Notification.objects.filter(recipient=self.request.user)
+
+    @api_view(["POST"])
+    def mark_as_read(self, request, pk=None):
+        notification = get_object_or_404(Notification, pk=pk, recipient=request.user)
+        notification.is_read = True
+        notification.save(update_fields=["is_read", "updated_at"])
+        return Response({"ok": True})

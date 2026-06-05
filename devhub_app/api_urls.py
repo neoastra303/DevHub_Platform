@@ -2,6 +2,8 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
+    CommentViewSet,
+    NotificationViewSet,
     PostViewSet,
     ProjectViewSet,
     audit_export_request,
@@ -18,6 +20,8 @@ from .views import (
 router = DefaultRouter()
 router.register(r"posts", PostViewSet, basename="posts")
 router.register(r"projects", ProjectViewSet, basename="projects")
+router.register(r"comments", CommentViewSet, basename="comments")
+router.register(r"notifications", NotificationViewSet, basename="notifications")
 
 urlpatterns = [
     path("audit/", audit_log_list, name="api-audit"),
@@ -29,6 +33,7 @@ urlpatterns = [
     path("profile/", profile_detail, name="api-profile"),
     path("featured-project/", featured_project, name="api-featured-project"),
     path("transactions/", transaction_list, name="api-transactions"),
+    path("notifications/<int:pk>/read/", NotificationViewSet.as_view({"post": "mark_as_read"}), name="api-notification-read"),
 ]
 
 urlpatterns += router.urls

@@ -24,12 +24,7 @@ services:
       - DJANGO_DEBUG=True
       - DJANGO_SECRET_KEY=docker-secret-key-123
       - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
-      - DJANGO_DB_ENGINE=django.db.backends.postgresql
-      - DJANGO_DB_NAME=devhub
-      - DJANGO_DB_USER=devhub_user
-      - DJANGO_DB_PASSWORD=devhub_pass
-      - DJANGO_DB_HOST=db
-      - DJANGO_DB_PORT=5432
+      - DJANGO_DB_URL=postgres://devhub_user:devhub_pass@db:5432/devhub
     depends_on:
       db:
         condition: service_healthy

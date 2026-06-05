@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.core import mail
 from django.core.management import call_command
 from django.test import TestCase, override_settings
@@ -6,6 +6,8 @@ from django.urls import reverse
 
 from .models import AuditLog, BackgroundJob, Post, Project, Skill, Technology, TransactionLog
 from .services import bootstrap_demo_user
+
+User = get_user_model()
 
 
 class DevHubAppTests(TestCase):
