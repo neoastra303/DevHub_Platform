@@ -1,0 +1,90 @@
+{% extends "devhub_app/base.html" %}
+{% block title %}DevHub | The Modern Developer Workspace{% endblock %}
+{% block body %}
+<main class="relative">
+    <!-- Hero Section -->
+    <section class="max-w-7xl mx-auto px-6 pt-20 pb-32 text-center relative overflow-hidden">
+        <div class="relative z-10 space-y-8">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-mint text-xs font-bold uppercase tracking-[0.3em] animate-fade-in">
+                <span class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-mint opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-mint"></span>
+                </span>
+                Version 2.0 Live
+            </div>
+            
+            <h1 class="text-6xl md:text-8xl font-black tracking-tighter leading-[1.1] max-w-5xl mx-auto">
+                Your entire <span class="text-mint">dev life</span> in one high-perf vault.
+            </h1>
+            
+            <p class="text-slate-400 text-xl md:text-2xl max-w-3xl mx-auto leading-relaxed">
+                DevHub is the ultimate dashboard for modern engineers. Track projects, publish insights, and monitor your platform growth with zero friction.
+            </p>
+            
+            <div class="flex flex-wrap items-center justify-center gap-4 pt-4">
+                {% if user.is_authenticated %}
+                <a href="{% url 'devhub_app:dashboard' %}" class="px-10 py-5 rounded-2xl bg-mint text-ink font-black text-lg shadow-xl shadow-mint/20 hover:scale-105 transition-all flex items-center gap-3">
+                    <i data-lucide="layout-dashboard" class="w-6 h-6"></i>
+                    Go to Dashboard
+                </a>
+                {% else %}
+                <a href="{% url 'devhub_app:signup' %}" class="px-10 py-5 rounded-2xl bg-mint text-ink font-black text-lg shadow-xl shadow-mint/20 hover:scale-105 transition-all">
+                    Start Your Workspace
+                </a>
+                <a href="{% url 'login' %}" class="px-10 py-5 rounded-2xl bg-white/5 border border-white/10 font-bold text-lg hover:bg-white/10 transition-all">
+                    Sign In
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <!-- Feature Grid -->
+    <section class="max-w-7xl mx-auto px-6 py-24 border-t border-white/5">
+        <div class="grid md:grid-cols-3 gap-8">
+            <div class="glass-card rounded-[2.5rem] p-10 space-y-6 group">
+                <div class="w-14 h-14 rounded-2xl bg-mint/10 flex items-center justify-center text-mint group-hover:bg-mint group-hover:text-ink transition-all duration-500">
+                    <i data-lucide="shield-check" class="w-8 h-8"></i>
+                </div>
+                <h3 class="text-2xl font-black">Private & Scoped</h3>
+                <p class="text-slate-400 leading-relaxed">Your data is yours. Every project, post, and log is isolated and protected by modern session auth.</p>
+            </div>
+            
+            <div class="glass-card rounded-[2.5rem] p-10 space-y-6 group">
+                <div class="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400 group-hover:bg-purple-400 group-hover:text-ink transition-all duration-500">
+                    <i data-lucide="zap" class="w-8 h-8"></i>
+                </div>
+                <h3 class="text-2xl font-black">High Performance</h3>
+                <p class="text-slate-400 leading-relaxed">Built for speed. Optimized database bootstrapping and minimal server-side overhead for a lag-free experience.</p>
+            </div>
+            
+            <div class="glass-card rounded-[2.5rem] p-10 space-y-6 group">
+                <div class="w-14 h-14 rounded-2xl bg-coral/10 flex items-center justify-center text-coral group-hover:bg-coral group-hover:text-ink transition-all duration-500">
+                    <i data-lucide="terminal" class="w-8 h-8"></i>
+                </div>
+                <h3 class="text-2xl font-black">Developer First</h3>
+                <p class="text-slate-400 leading-relaxed">Command palettes, Markdown support, and REST APIs. Everything you need to automate your dev workspace.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Footer -->
+    <section class="max-w-7xl mx-auto px-6 py-24 mb-20">
+        <div class="glass-card rounded-[3rem] p-12 md:p-20 text-center space-y-8 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-64 h-64 bg-mint/10 blur-[100px] -mr-32 -mt-32"></div>
+            <div class="absolute bottom-0 left-0 w-64 h-64 bg-coral/10 blur-[100px] -ml-32 -mb-32"></div>
+            
+            <h2 class="text-4xl md:text-6xl font-black tracking-tight relative z-10">Ready to level up?</h2>
+            <p class="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto relative z-10">
+                Join hundreds of engineers who use DevHub to organize their technical lives. No clutter, just code.
+            </p>
+            <div class="relative z-10">
+                <a href="{% url 'devhub_app:signup' %}" class="inline-flex items-center gap-3 px-10 py-5 rounded-2xl bg-white text-ink font-black text-lg hover:bg-mint hover:scale-105 transition-all">
+                    Create Free Account
+                    <i data-lucide="chevron-right" class="w-6 h-6"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+</main>
+{% endblock %}

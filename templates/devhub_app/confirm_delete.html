@@ -1,0 +1,15 @@
+{% extends "devhub_app/base.html" %}
+{% block title %}Confirm Delete | DevHub{% endblock %}
+{% block body %}
+<main class="max-w-2xl mx-auto px-6 py-10">
+    <section class="glass-card rounded-[2rem] p-8">
+        <h1 class="text-3xl font-black mb-4">Delete {{ object }}</h1>
+        <p class="text-slate-300 mb-6">This action cannot be undone.</p>
+        <form method="post" class="flex gap-3">
+            {% csrf_token %}
+            <button class="px-6 py-3 rounded-2xl bg-red-500 text-black font-black">Delete</button>
+            <a href="{% url 'devhub_app:dashboard' %}" class="px-6 py-3 rounded-2xl bg-white/10">Cancel</a>
+        </form>
+    </section>
+</main>
+{% endblock %}

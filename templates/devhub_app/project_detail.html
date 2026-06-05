@@ -1,0 +1,35 @@
+{% extends "devhub_app/base.html" %}
+{% block title %}{{ project.title }} | DevHub{% endblock %}
+{% block body %}
+<main class="max-w-5xl mx-auto px-6 py-10">
+    <a href="{% url 'devhub_app:dashboard' %}" class="inline-flex items-center gap-2 text-slate-300 mb-8"><i data-lucide="arrow-left" class="w-4 h-4"></i> Back to dashboard</a>
+    <section class="glass-card rounded-[2rem] p-8">
+        <div class="flex flex-wrap items-start justify-between gap-5 mb-8">
+            <div>
+                <p class="uppercase tracking-[0.3em] text-xs text-mint mb-3">Project</p>
+                <h1 class="text-4xl font-black mb-3">{{ project.title }}</h1>
+                <p class="text-slate-300 max-w-3xl">{{ project.summary }}</p>
+            </div>
+            <div class="flex gap-3">
+                <a href="{% url 'devhub_app:project-edit' project.pk %}" class="px-4 py-3 rounded-2xl bg-white/10">Edit</a>
+                <a href="{% url 'devhub_app:project-delete' project.pk %}" class="px-4 py-3 rounded-2xl bg-red-500/15 text-red-200">Delete</a>
+            </div>
+        </div>
+        <div class="flex flex-wrap gap-2 mb-8">
+            {% for tech in project.technology_names %}
+            <span class="px-3 py-2 rounded-full text-xs bg-mint/10 text-mint">{{ tech }}</span>
+            {% endfor %}
+        </div>
+        <div class="grid lg:grid-cols-[1.2fr_.8fr] gap-8">
+            <div>
+                <h2 class="text-xl font-black mb-4">Description</h2>
+                <p class="text-slate-200 leading-8">{{ project.description }}</p>
+            </div>
+            <div class="space-y-4">
+                <a href="{{ project.demo_url|default:'#' }}" class="block text-center px-5 py-4 rounded-2xl bg-mint text-black font-black">Live Demo</a>
+                <a href="{{ project.source_url|default:'#' }}" class="block text-center px-5 py-4 rounded-2xl bg-white/10">Source Code</a>
+            </div>
+        </div>
+    </section>
+</main>
+{% endblock %}

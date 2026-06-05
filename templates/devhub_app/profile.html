@@ -1,0 +1,93 @@
+{% extends "devhub_app/base.html" %}
+{% block title %}Profile | DevHub{% endblock %}
+{% block body %}
+<main class="max-w-4xl mx-auto px-6 py-12">
+    <div class="grid lg:grid-cols-[1fr_2fr] gap-10">
+        <!-- Sidebar -->
+        <aside class="space-y-6">
+            <div class="glass-card rounded-[2.5rem] p-8 text-center relative overflow-hidden group">
+                <div class="absolute inset-0 bg-mint/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div class="relative z-10">
+                    <div class="w-32 h-32 rounded-[2rem] bg-white/5 border border-white/10 p-2 mx-auto mb-6 shadow-glow">
+                        <img src="https://api.dicebear.com/7.x/bottts/svg?seed={{ profile.avatar_seed }}" alt="Avatar" class="w-full h-full object-cover rounded-[1.5rem]">
+                    </div>
+                    <h1 class="text-2xl font-black mb-1">{{ workspace_user.get_full_name|default:workspace_user.username }}</h1>
+                    <p class="text-slate-500 text-sm font-bold uppercase tracking-widest">{{ workspace_user.username }}</p>
+                    
+                    <div class="mt-8 flex flex-col gap-2">
+                        <div class="flex justify-between text-xs font-bold uppercase tracking-widest text-slate-400 px-2">
+                            <span>Reputation</span>
+                            <span class="text-mint">{{ profile.reputation }}</span>
+                        </div>
+                        <div class="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                            <div class="h-full bg-mint" style="width: {% widthratio profile.reputation 1000 100 %}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-[2rem] p-6">
+                <h3 class="text-[10px] uppercase tracking-[0.2em] font-black text-slate-500 mb-4">Account Metadata</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="calendar" class="w-4 h-4 text-slate-600"></i>
+                        <span class="text-xs text-slate-400">Joined {{ workspace_user.date_joined|date:"M Y" }}</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="mail" class="w-4 h-4 text-slate-600"></i>
+                        <span class="text-xs text-slate-400">{{ workspace_user.email }}</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Form -->
+        <section class="space-y-6">
+            <div class="glass-card rounded-[2.5rem] p-8 md:p-12">
+                <header class="mb-10">
+                    <h2 class="text-3xl font-black tracking-tight">Identity Settings</h2>
+                    <p class="text-slate-400 mt-2">Update your public presence and professional headline.</p>
+                </header>
+
+                <form method="post" class="space-y-8">
+                    {% csrf_token %}
+                    
+                    <!-- Headline -->
+                    <div class="space-y-2 field-shell">
+                        <label class="text-xs uppercase tracking-[0.2em] font-black text-slate-500 ml-1">Professional Headline</label>
+                        {{ form.headline }}
+                        {% if form.headline.errors %}<p class="text-coral text-xs mt-1">{{ form.headline.errors.0 }}</p>{% endif %}
+                    </div>
+
+                    <!-- Bio -->
+                    <div class="space-y-2 field-shell">
+                        <label class="text-xs uppercase tracking-[0.2em] font-black text-slate-500 ml-1">Technical Bio</label>
+                        {{ form.bio }}
+                        {% if form.bio.errors %}<p class="text-coral text-xs mt-1">{{ form.bio.errors.0 }}</p>{% endif %}
+                    </div>
+
+                    <!-- Skills -->
+                    <div class="space-y-2 field-shell">
+                        <label class="text-xs uppercase tracking-[0.2em] font-black text-slate-500 ml-1">Skills Palette</label>
+                        {{ form.skills_text }}
+                        <p class="text-[10px] text-slate-500 mt-2 ml-1">Separate with commas: <span class="text-slate-400">Python, Rust, AWS, Distributed Systems</span></p>
+                    </div>
+
+                    <!-- Avatar Seed -->
+                    <div class="space-y-2 field-shell">
+                        <label class="text-xs uppercase tracking-[0.2em] font-black text-slate-500 ml-1">Avatar Seed (DiceBear)</label>
+                        {{ form.avatar_seed }}
+                        <p class="text-[10px] text-slate-500 mt-2 ml-1">Change this to regenerate your bot avatar.</p>
+                    </div>
+
+                    <div class="pt-8 border-t border-white/5 flex justify-end">
+                        <button type="submit" class="px-10 py-4 rounded-2xl bg-mint text-ink font-black shadow-lg shadow-mint/10 hover:scale-105 transition-all">
+                            Save Identity
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </div>
+</main>
+{% endblock %}

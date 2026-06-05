@@ -1,0 +1,29 @@
+[project]
+name = "devhub-platform"
+version = "1.0.0"
+description = "Enterprise-grade developer workspace platform."
+authors = [{ name = "neoastra303" }]
+dependencies = [
+    "Django>=6.0,<6.1",
+    "djangorestframework>=3.17,<3.18",
+    "django-cors-headers>=4.9,<5.0",
+    "psycopg[binary]>=3.2,<3.3",
+    "drf-spectacular>=0.28,<0.29",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "B", "C4", "SIM", "UP"]
+ignore = ["D100", "D104"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/migrations/*.py" = ["E501"]
+"**/tests.py" = ["E501"]
+"**/tests/*.py" = ["E501"]
+"**/views.py" = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["devhub_app", "core"]

@@ -1,0 +1,95 @@
+{% extends "devhub_app/base.html" %}
+{% block title %}{% if form.instance.pk %}Edit {{ form.instance.title }}{% else %}New Project{% endif %} | DevHub{% endblock %}
+{% block body %}
+<main class="max-w-4xl mx-auto px-6 py-12">
+    <a href="{% url 'devhub_app:dashboard' %}" class="inline-flex items-center gap-2 text-slate-500 hover:text-mint transition-colors mb-8 group">
+        <i data-lucide="arrow-left" class="w-4 h-4 group-hover:-translate-x-1 transition-transform"></i>
+        Back to Workspace
+    </a>
+
+    <section class="glass-card rounded-[2.5rem] p-8 md:p-12 shadow-glow">
+        <header class="mb-10">
+            <h1 class="text-4xl font-black tracking-tight mb-3">
+                {% if form.instance.pk %}Refine Project{% else %}Initialize Project{% endif %}
+            </h1>
+            <p class="text-slate-400">Define the core metadata for your technical project.</p>
+        </header>
+
+        <form method="post" class="space-y-8">
+            {% csrf_token %}
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- Title -->
+                <div class="space-y-2 field-shell">
+                    <label class="text-xs uppercase tracking-[0.2em] font-black text-slate-500 ml-1">Project Title</label>
+                    {{ form.title }}
+                    {% if form.title.errors %}<p class="text-coral text-xs mt-1">{{ form.title.errors.0 }}</p>{% endif %}
+                </div>
+
+                <!-- Summary -->
+                <div class="space-y-2 field-shell">
+                    <label class="text-xs uppercase tracking-[0.2em] font-black text-slate-500 ml-1">One-line Summary</label>
+                    {{ form.summary }}
+                    {% if form.summary.errors %}<p class="text-coral text-xs mt-1">{{ form.summary.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div class="space-y-2 field-shell" x-data="{ count: {{ form.description.value|default:''|length }} }">
+                <div class="flex items-center justify-between ml-1">
+                    <label class="text-xs uppercase tracking-[0.2em] font-black text-slate-500">Detailed Description</label>
+                    <span class="text-[10px] text-slate-600 font-bold" :class="count < 20 ? 'text-coral' : 'text-mint'">
+                        <span x-text="count"></span> chars (min 20)
+                    </span>
+                </div>
+                <textarea name="description" rows="6" @input="count = $el.value.length" class="w-full">{{ form.description.value|default:'' }}</textarea>
+                {% if form.description.errors %}<p class="text-coral text-xs mt-1">{{ form.description.errors.0 }}</p>{% endif %}
+            </div>
+
+            <!-- Technologies -->
+            <div class="space-y-2 field-shell">
+                <label class="text-xs uppercase tracking-[0.2em] font-black text-slate-500 ml-1">Technology Stack</label>
+                {{ form.tech_stack_text }}
+                <p class="text-[10px] text-slate-500 mt-2 ml-1">Comma-separated: <span class="text-slate-400 italic">Django, PostgreSQL, Tailwind</span></p>
+                {% if form.tech_stack_text.errors %}<p class="text-coral text-xs mt-1">{{ form.tech_stack_text.errors.0 }}</p>{% endif %}
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- Links -->
+                <div class="space-y-2 field-shell">
+                    <label class="text-xs uppercase tracking-[0.2em] font-black text-slate-500 ml-1">Demo URL</label>
+                    {{ form.demo_url }}
+                    {% if form.demo_url.errors %}<p class="text-coral text-xs mt-1">{{ form.demo_url.errors.0 }}</p>{% endif %}
+                </div>
+                <div class="space-y-2 field-shell">
+                    <label class="text-xs uppercase tracking-[0.2em] font-black text-slate-500 ml-1">Source URL</label>
+                    {{ form.source_url }}
+                    {% if form.source_url.errors %}<p class="text-coral text-xs mt-1">{{ form.source_url.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
+
+            <!-- Options -->
+            <div class="pt-4 flex items-center gap-6">
+                <label class="flex items-center gap-3 cursor-pointer group">
+                    <div class="relative">
+                        <input type="checkbox" name="is_featured" class="sr-only peer" {% if form.is_featured.value %}checked{% endif %}>
+                        <div class="w-12 h-6 bg-white/5 rounded-full border border-white/10 peer-checked:bg-mint/20 peer-checked:border-mint transition-all"></div>
+                        <div class="absolute left-1 top-1 w-4 h-4 bg-slate-500 rounded-full transition-all peer-checked:left-7 peer-checked:bg-mint"></div>
+                    </div>
+                    <span class="text-sm font-bold text-slate-400 group-hover:text-slate-200">Feature on profile</span>
+                </label>
+            </div>
+
+            <div class="pt-8 border-t border-white/5 flex flex-wrap items-center justify-between gap-4">
+                <p class="text-xs text-slate-500 max-w-xs">All fields except URLs and Technologies are required for submission.</p>
+                <div class="flex items-center gap-4">
+                    <a href="{% url 'devhub_app:dashboard' %}" class="px-6 py-3 rounded-xl font-bold text-slate-400 hover:text-white transition-colors">Cancel</a>
+                    <button type="submit" class="px-10 py-4 rounded-xl bg-mint text-ink font-black shadow-lg shadow-mint/10 hover:scale-105 transition-all">
+                        {% if form.instance.pk %}Save Changes{% else %}Commit Project{% endif %}
+                    </button>
+                </div>
+            </div>
+        </form>
+    </section>
+</main>
+{% endblock %}
