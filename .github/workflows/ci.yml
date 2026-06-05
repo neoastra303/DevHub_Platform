@@ -65,5 +65,7 @@ jobs:
         run: python manage.py collectstatic --noinput
       - name: Migration consistency
         run: python manage.py makemigrations --check --dry-run
+      - name: API Schema Check
+        run: python manage.py spectacular --file schema.yml
       - name: Tests
         run: python manage.py test
