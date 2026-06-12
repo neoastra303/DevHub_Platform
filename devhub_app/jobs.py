@@ -4,7 +4,7 @@ import io
 from celery import shared_task
 from django.utils import timezone
 
-from .models import AuditLog, BackgroundJob
+from .models import AuditLog, BackgroundJob, Notification
 
 
 @shared_task(bind=True)
@@ -14,7 +14,17 @@ def process_background_job_task(self, job_id):
     except BackgroundJob.DoesNotExist:
         return f"Job {job_id} not found"
     
-    return process_background_job(job)
+    result = process_background_job(job)
+    
+    # Notify user when job finishes
+    Notification.objects.create(
+        recipient=job.requested_by,
+        title=f"Job {job.get_job_type_display()} Complete",
+        message=f"Your background job has finished with status: {job.get_status_display()}",
+        link=f"/audit/" if job.job_type == BackgroundJob.JobType.AUDIT_EXPORT else ""
+    )
+    
+    return result
 
 
 def enqueue_audit_export_job(*, user, filters=None):

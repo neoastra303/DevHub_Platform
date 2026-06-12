@@ -12,3 +12,6 @@ celery>=5.4.0,<5.5
 redis>=5.2.1,<5.3
 django-celery-results>=2.5.1,<2.6
 importlib-metadata; python_version < "3.13"
+channels>=4.1.0,<4.2
+channels-redis>=4.2.0,<4.3
+daphne>=4.1.2,<4.2

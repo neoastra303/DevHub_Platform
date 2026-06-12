@@ -232,12 +232,44 @@ class Comment(TimestampedModel):
         return f"Comment by {self.author.username} on {self.post or self.project}"
 
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+
+
 class Notification(TimestampedModel):
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications")
     title = models.CharField(max_length=100)
     message = models.TextField()
     is_read = models.BooleanField(default=False)
     link = models.CharField(max_length=255, blank=True)
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+        if is_new:
+            try:
+                self.send_to_websocket()
+            except Exception:
+                # Fallback if channel layer is not configured or fails
+                pass
+
+    def send_to_websocket(self):
+        channel_layer = get_channel_layer()
+        if not channel_layer:
+            return
+        group_name = f"user_{self.recipient.id}_notifications"
+        async_to_sync(channel_layer.group_send)(
+            group_name,
+            {
+                "type": "send_notification",
+                "content": {
+                    "id": self.id,
+                    "title": self.title,
+                    "message": self.message,
+                    "created_at": self.created_at.isoformat() if self.created_at else "",
+                },
+            },
+        )
 
     class Meta:
         ordering = ["-created_at"]
