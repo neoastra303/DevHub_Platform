@@ -21,6 +21,7 @@ from .views import (
     project_detail_page,
     signup_page,
     transactions_page,
+    post_like_htmx,
 )
 
 app_name = "devhub_app"
@@ -41,6 +42,7 @@ urlpatterns = [
     path("posts/new/", PostCreateView.as_view(), name="post-create"),
     path("posts/<int:pk>/edit/", PostUpdateView.as_view(), name="post-edit"),
     path("posts/<int:pk>/delete/", PostDeleteView.as_view(), name="post-delete"),
+    path("posts/<int:pk>/like/", post_like_htmx, name="post-like-htmx"),
     path("projects/new/", ProjectCreateView.as_view(), name="project-create"),
     path("projects/<slug:slug>/", project_detail_page, name="project-detail"),
     path("projects/<int:pk>/edit/", ProjectUpdateView.as_view(), name="project-edit"),

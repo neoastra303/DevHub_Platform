@@ -1,0 +1,14 @@
+<button 
+    class="flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-coral transition-colors"
+    hx-post="{% url 'devhub_app:post-like-htmx' post.pk %}"
+    hx-swap="outerHTML"
+    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+>
+    <i data-lucide="heart" class="w-5 h-5"></i>
+    <span>{{ post.likes_count }}</span>
+</button>
+<script>
+    if (window.lucide) {
+        window.lucide.createIcons();
+    }
+</script>

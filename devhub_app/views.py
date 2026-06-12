@@ -15,7 +15,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DeleteView, UpdateView
 from rest_framework import permissions, viewsets, filters
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
@@ -237,6 +237,19 @@ class DevHubPasswordResetConfirmView(PasswordResetConfirmView):
 
 class DevHubPasswordResetCompleteView(PasswordResetCompleteView):
     template_name = "registration/password_reset_complete.html"
+
+
+@login_required
+def post_like_htmx(request, pk):
+    post = get_object_or_404(Post, pk=pk)
+    # Simple like logic: just increment (in a real app you'd track who liked what)
+    post.likes_count += 1
+    post.save(update_fields=["likes_count", "updated_at"])
+    return render(
+        request,
+        "devhub_app/partials/post_likes.html",
+        {"post": post},
+    )
 
 
 class OwnerQuerySetMixin(LoginRequiredMixin):
@@ -579,9 +592,10 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = NotificationSerializer
 
     def get_queryset(self):
-        return Notification.objects.filter(recipient=self.request.user)
+        queryset = Notification.objects.filter(recipient=self.request.user)
+        return queryset
 
-    @api_view(["POST"])
+    @action(detail=True, methods=["post"], url_path="read")
     def mark_as_read(self, request, pk=None):
         notification = get_object_or_404(Notification, pk=pk, recipient=request.user)
         notification.is_read = True

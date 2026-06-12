@@ -59,10 +59,7 @@
 
             <div class="flex items-center justify-between pt-6 border-t border-white/5">
                 <div class="flex items-center gap-6">
-                    <button class="flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-coral transition-colors">
-                        <i data-lucide="heart" class="w-5 h-5"></i>
-                        <span>{{ post.likes_count }}</span>
-                    </button>
+                    {% include "devhub_app/partials/post_likes.html" %}
                     <div class="flex items-center gap-2 text-sm font-bold text-slate-400">
                         <i data-lucide="eye" class="w-5 h-5"></i>
                         <span>{{ post.views }}</span>
