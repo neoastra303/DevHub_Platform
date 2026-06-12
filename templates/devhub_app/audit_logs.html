@@ -19,7 +19,7 @@
         </form>
     </div>
     <div class="flex flex-wrap gap-3 mb-8">
-        <form method="post" action="/api/devhub/audit/export/" class="flex flex-wrap gap-3">
+        <form method="post" action="/api/v1/devhub/audit/export/" class="flex flex-wrap gap-3">
             {% csrf_token %}
             <input type="hidden" name="action" value="{{ request.GET.action }}">
             <input type="hidden" name="target_type" value="{{ request.GET.target_type }}">
@@ -73,7 +73,7 @@
                     <td class="p-5 text-slate-300">{{ job.created_at|date:"M d, Y H:i" }}</td>
                     <td class="p-5">
                         {% if job.status == "succeeded" %}
-                        <a href="/api/devhub/jobs/{{ job.id }}/download/" class="text-mint font-bold">Download</a>
+                        <a href="/api/v1/devhub/jobs/{{ job.id }}/download/" class="text-mint font-bold">Download</a>
                         {% elif job.status == "failed" %}
                         <span class="text-red-300">{{ job.error_message }}</span>
                         {% else %}

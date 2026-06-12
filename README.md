@@ -63,7 +63,7 @@ The application will be available at `http://localhost:8000`.
 
 ### API Documentation
 Once running, explore the API through:
-- **Swagger UI:** `/api/docs/swagger/`
+- **Swagger UI:** `/api/docs/swagger/` (Points to `/api/v1/devhub/`)
 - **Redoc:** `/api/docs/redoc/`
 
 ---

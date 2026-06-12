@@ -4,7 +4,7 @@ from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from .models import AuditLog, BackgroundJob, Post, Project, Skill, Technology, TransactionLog
+from .models import AuditLog, BackgroundJob, Notification, Post, Project, Skill, Technology, TransactionLog
 from .services import bootstrap_demo_user
 
 User = get_user_model()
@@ -122,7 +122,7 @@ class DevHubAppTests(TestCase):
         self.assertEqual(project_payload["count"], 1)
         self.assertEqual(project_payload["results"][0]["title"], "Payments")
 
-        transaction_response = self.client.get("/api/devhub/transactions/", {"status": "completed", "page_size": 1})
+        transaction_response = self.client.get("/api/v1/devhub/transactions/", {"status": "completed", "page_size": 1})
         self.assertEqual(transaction_response.status_code, 200)
         transaction_payload = transaction_response.json()
         self.assertEqual(transaction_payload["count"], 1)
@@ -202,7 +202,7 @@ class DevHubAppTests(TestCase):
         self.assertContains(page_response, "Post")
         self.assertNotContains(page_response, "Project")
 
-        api_response = self.client.get("/api/devhub/audit/", {"action": "create"})
+        api_response = self.client.get("/api/v1/devhub/audit/", {"action": "create"})
         self.assertEqual(api_response.status_code, 200)
         payload = api_response.json()
         self.assertEqual(payload["count"], 1)
@@ -257,7 +257,7 @@ class DevHubAppTests(TestCase):
             target_id="42",
             metadata={"source": "manual"},
         )
-        response = self.client.post("/api/devhub/audit/export/", {"action": "create"})
+        response = self.client.post("/api/v1/devhub/audit/export/", {"action": "create"})
         self.assertEqual(response.status_code, 202)
         job_id = response.json()["job"]["id"]
         job = BackgroundJob.objects.get(pk=job_id)
@@ -267,11 +267,32 @@ class DevHubAppTests(TestCase):
         job.refresh_from_db()
         self.assertEqual(job.status, BackgroundJob.Status.SUCCEEDED)
 
-        listing = self.client.get("/api/devhub/jobs/")
+        listing = self.client.get("/api/v1/devhub/jobs/")
         self.assertEqual(listing.status_code, 200)
         self.assertEqual(listing.json()["count"], 1)
 
-        download = self.client.get(f"/api/devhub/jobs/{job.id}/download/")
+        download = self.client.get(f"/api/v1/devhub/jobs/{job.id}/download/")
         self.assertEqual(download.status_code, 200)
         self.assertIn("text/csv", download["Content-Type"])
         self.assertIn("Project", download.content.decode())
+
+    def test_notification_mark_as_read_action(self):
+        self.login()
+        notification = Notification.objects.create(
+            recipient=self.user,
+            title="Build complete",
+            message="Your export has finished.",
+            is_read=False,
+        )
+
+        unread_list = self.client.get(reverse("notifications-list"))
+        self.assertEqual(unread_list.status_code, 200)
+        self.assertEqual(unread_list.json()["count"], 1)
+        self.assertFalse(unread_list.json()["results"][0]["is_read"])
+
+        response = self.client.post(reverse("notifications-mark-as-read", kwargs={"pk": notification.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["ok"])
+
+        notification.refresh_from_db()
+        self.assertTrue(notification.is_read)
