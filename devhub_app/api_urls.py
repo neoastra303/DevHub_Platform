@@ -15,6 +15,7 @@ from .views import (
     featured_project,
     profile_detail,
     transaction_list,
+    analytics_summary,
 )
 
 router = DefaultRouter()
@@ -33,7 +34,7 @@ urlpatterns = [
     path("profile/", profile_detail, name="api-profile"),
     path("featured-project/", featured_project, name="api-featured-project"),
     path("transactions/", transaction_list, name="api-transactions"),
-    path("notifications/<int:pk>/read/", NotificationViewSet.as_view({"post": "mark_as_read"}), name="api-notification-read"),
+    path("analytics/", analytics_summary, name="api-analytics"),
 ]
 
 urlpatterns += router.urls

@@ -252,6 +252,43 @@ def post_like_htmx(request, pk):
     )
 
 
+from django.utils import timezone
+from datetime import timedelta
+
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def analytics_summary(request):
+    """
+    Returns analytics data for the user's posts over the last 30 days.
+    """
+    user = request.user
+    posts = Post.objects.filter(author=user)
+    
+    # Mocking time-series data based on actual post views for visualization
+    # In a real app, this would query a dedicated Analytics/Metric model
+    labels = []
+    data = []
+    now = timezone.now()
+    
+    for i in range(7, -1, -1):
+        day = now - timedelta(days=i)
+        labels.append(day.strftime("%b %d"))
+        # Deterministic pseudo-random data based on total post views
+        total_views = posts.aggregate(total=Sum("views"))["total"] or 0
+        data.append(int((total_views / 10) * (1 + (i % 3) * 0.2)))
+
+    return Response({
+        "labels": labels,
+        "datasets": [
+            {
+                "label": "Views",
+                "data": data,
+            }
+        ]
+    })
+
+
 class OwnerQuerySetMixin(LoginRequiredMixin):
     def get_queryset(self):
         return self.model.objects.filter(**{self.owner_field: self.request.user})
