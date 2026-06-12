@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     "django_filters",
     "drf_spectacular",
     "django_prometheus",
+    "django_celery_results",
     "devhub_app",
 ]
 
@@ -128,6 +129,15 @@ SPECTACULAR_SETTINGS = {
 
 DEVHUB_API_WRITE_RATE = env("DEVHUB_API_WRITE_RATE", default="30/hour")
 DEVHUB_API_BURST_RATE = env("DEVHUB_API_BURST_RATE", default="120/hour")
+
+# Celery Configuration Options
+CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="memory://")
+CELERY_RESULT_BACKEND = "django-db"
+CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = TIME_ZONE
 
 CACHES = {
     "default": {

@@ -29,5 +29,25 @@ services:
       db:
         condition: service_healthy
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  worker:
+    build: .
+    command: celery -A core worker -l info
+    volumes:
+      - .:/app
+    environment:
+      - DJANGO_DEBUG=True
+      - DJANGO_SECRET_KEY=docker-secret-key-123
+      - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
+      - DJANGO_DB_URL=postgres://devhub_user:devhub_pass@db:5432/devhub
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+
 volumes:
   postgres_data:

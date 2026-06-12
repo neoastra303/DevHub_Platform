@@ -1,17 +1,30 @@
 import csv
 import io
 
+from celery import shared_task
 from django.utils import timezone
 
 from .models import AuditLog, BackgroundJob
 
 
+@shared_task(bind=True)
+def process_background_job_task(self, job_id):
+    try:
+        job = BackgroundJob.objects.get(pk=job_id)
+    except BackgroundJob.DoesNotExist:
+        return f"Job {job_id} not found"
+    
+    return process_background_job(job)
+
+
 def enqueue_audit_export_job(*, user, filters=None):
-    return BackgroundJob.objects.create(
+    job = BackgroundJob.objects.create(
         requested_by=user,
         job_type=BackgroundJob.JobType.AUDIT_EXPORT,
         payload={"filters": filters or {}, "requested_at": timezone.now().isoformat()},
     )
+    process_background_job_task.delay(job.id)
+    return job
 
 
 def process_background_job(job):

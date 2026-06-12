@@ -248,6 +248,7 @@ class DevHubAppTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["status"], "healthy")
 
+    @override_settings(CELERY_TASK_ALWAYS_EAGER=True)
     def test_audit_export_job_can_be_queued_processed_and_downloaded(self):
         self.login()
         AuditLog.objects.create(
@@ -258,13 +259,11 @@ class DevHubAppTests(TestCase):
             metadata={"source": "manual"},
         )
         response = self.client.post("/api/v1/devhub/audit/export/", {"action": "create"})
+        # Should be 202 because the view returns it immediately after delay()
         self.assertEqual(response.status_code, 202)
         job_id = response.json()["job"]["id"]
         job = BackgroundJob.objects.get(pk=job_id)
-        self.assertEqual(job.status, BackgroundJob.Status.QUEUED)
-
-        call_command("process_jobs", "--limit", "5")
-        job.refresh_from_db()
+        # With ALWAYS_EAGER=True, the task runs synchronously inside delay()
         self.assertEqual(job.status, BackgroundJob.Status.SUCCEEDED)
 
         listing = self.client.get("/api/v1/devhub/jobs/")
