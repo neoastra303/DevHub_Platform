@@ -7,22 +7,15 @@
 
 ---
 
+![DevHub Hero](DevHub%20README%20Hero.png)
+
+---
+
 DevHub is more than a dashboard; it’s the quiet, high-performance vault for your technical journey. We believe in the power of focus, the joy of organized code, and the necessity of real-time insights—all delivered with zero friction.
 
 Whether you're tracking intricate project dependencies or simply need a clean space to breathe and build, DevHub transforms the chaos of modern engineering into a calm, structured narrative.
 
 Created with heart by [neoastra303](https://github.com/neoastra303).
-
----
-
-## 🖼️ A Visual Tour
-
-Get a glimpse into the sanctuary we’ve built for your developer life.
-
-| **Dashboard** | **Project Workspace** | **Secure Account Creation** |
-| :--- | :--- | :--- |
-| ![Dashboard](Screenshot%202026-06-13%20at%2019-23-34%20Dashboard%20DevHub.png) | ![Workspace](Screenshot%202026-06-13%20at%2019-28-12%20DevHub%20The%20Modern%20Developer%20Workspace.png) | ![Create Account](Screenshot%202026-06-13%20at%2019-28-59%20Create%20Account%20DevHub.png) |
-| Your command center for real-time analytics. | Focused environments for deep work. | Safe, secure, and ready to start. |
 
 ---
 
