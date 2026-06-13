@@ -1,0 +1,32 @@
+{% comment %}
+    Component: Form Field Shell
+    Parameters:
+        - label: The field label
+        - field: The Django form field object
+        - icon: Optional Lucide icon name
+{% endcomment %}
+<div class="space-y-2 group">
+    {% if label %}
+    <label class="text-xs uppercase tracking-[0.2em] font-bold text-slate-500 ml-1 group-focus-within:text-mint transition-colors">
+        {{ label }}
+    </label>
+    {% endif %}
+    
+    <div class="relative field-shell">
+        {% if icon %}
+        <div class="absolute left-4 top-[1.1rem] text-slate-500 group-focus-within:text-mint transition-colors">
+            <i data-lucide="{{ icon }}" class="w-4 h-4"></i>
+        </div>
+        {% endif %}
+        
+        <div class="{% if icon %}pl-11{% endif %}">
+            {{ field }}
+        </div>
+        
+        {% if field.errors %}
+        <div class="mt-2 text-xs text-coral font-bold px-2">
+            {% for error in field.errors %}{{ error }}{% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>

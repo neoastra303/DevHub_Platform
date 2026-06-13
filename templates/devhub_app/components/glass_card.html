@@ -1,0 +1,29 @@
+{% comment %}
+    Component: Glass Card (Extendable Base)
+    Usage:
+        {% extends "devhub_app/components/glass_card.html" %}
+        {% block card_content %}...{% endblock %}
+{% endcomment %}
+<div class="glass-card rounded-[2.5rem] p-8 group {{ card_class }}">
+    {% if icon or title %}
+    <div class="flex items-center justify-between mb-8">
+        <div class="flex items-center gap-4">
+            {% if icon %}
+            <div class="w-14 h-14 rounded-2xl bg-mint/10 flex items-center justify-center text-mint group-hover:bg-mint group-hover:text-ink transition-all duration-500 border border-mint/10">
+                <i data-lucide="{{ icon }}" class="w-8 h-8"></i>
+            </div>
+            {% endif %}
+            {% if title %}
+            <h3 class="text-2xl font-black tracking-tight {{ title_class }}">{{ title }}</h3>
+            {% endif %}
+        </div>
+        <div>
+            {% block card_header_extra %}{% endblock %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="relative z-10">
+        {% block card_content %}{% endblock %}
+    </div>
+</div>

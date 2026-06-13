@@ -16,14 +16,8 @@
             <p class="text-slate-400 max-w-2xl text-lg">{{ profile.headline }}</p>
         </div>
         <div class="flex flex-wrap gap-4">
-            <a href="{% url 'devhub_app:project-create' %}" class="group px-6 py-4 rounded-2xl bg-mint text-ink font-black flex items-center gap-3 hover:scale-105 transition-all shadow-lg shadow-mint/10">
-                <i data-lucide="plus-circle" class="w-5 h-5 group-hover:rotate-90 transition-transform"></i>
-                New Project
-            </a>
-            <a href="{% url 'devhub_app:post-create' %}" class="px-6 py-4 rounded-2xl bg-white/5 border border-white/5 font-bold flex items-center gap-3 hover:bg-white/10 transition-all">
-                <i data-lucide="pen-tool" class="w-5 h-5"></i>
-                New Post
-            </a>
+            {% include "devhub_app/components/action_button.html" with url="/projects/new/" text="New Project" icon="plus-circle" aria_label="Create a new project" %}
+            {% include "devhub_app/components/action_button.html" with url="/posts/new/" text="New Post" icon="pen-tool" variant="glass" aria_label="Create a new post" %}
         </div>
     </section>
 

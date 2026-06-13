@@ -23,17 +23,10 @@
             
             <div class="flex flex-wrap items-center justify-center gap-4 pt-4">
                 {% if user.is_authenticated %}
-                <a href="{% url 'devhub_app:dashboard' %}" class="px-10 py-5 rounded-2xl bg-mint text-ink font-black text-lg shadow-xl shadow-mint/20 hover:scale-105 transition-all flex items-center gap-3">
-                    <i data-lucide="layout-dashboard" class="w-6 h-6"></i>
-                    Go to Dashboard
-                </a>
+                {% include "devhub_app/components/action_button.html" with url="/dashboard/" text="Go to Dashboard" icon="layout-dashboard" aria_label="Go to your dashboard" %}
                 {% else %}
-                <a href="{% url 'devhub_app:signup' %}" class="px-10 py-5 rounded-2xl bg-mint text-ink font-black text-lg shadow-xl shadow-mint/20 hover:scale-105 transition-all">
-                    Start Your Workspace
-                </a>
-                <a href="{% url 'login' %}" class="px-10 py-5 rounded-2xl bg-white/5 border border-white/10 font-bold text-lg hover:bg-white/10 transition-all">
-                    Sign In
-                </a>
+                {% include "devhub_app/components/action_button.html" with url="/signup/" text="Start Your Workspace" aria_label="Sign up for a new account" %}
+                {% include "devhub_app/components/action_button.html" with url="/accounts/login/" text="Sign In" variant="glass" aria_label="Login to your account" %}
                 {% endif %}
             </div>
         </div>
@@ -42,24 +35,24 @@
     <!-- Feature Grid -->
     <section class="max-w-7xl mx-auto px-6 py-24 border-t border-white/5">
         <div class="grid md:grid-cols-3 gap-8">
-            <div class="glass-card rounded-[2.5rem] p-10 space-y-6 group">
-                <div class="w-14 h-14 rounded-2xl bg-mint/10 flex items-center justify-center text-mint group-hover:bg-mint group-hover:text-ink transition-all duration-500">
+            <div class="glass-card rounded-[2.5rem] p-10 space-y-6 group hover:translate-y-[-8px]">
+                <div class="w-14 h-14 rounded-2xl bg-mint/10 flex items-center justify-center text-mint group-hover:bg-mint group-hover:text-ink transition-all duration-500 border border-mint/10">
                     <i data-lucide="shield-check" class="w-8 h-8"></i>
                 </div>
                 <h3 class="text-2xl font-black">Private & Scoped</h3>
                 <p class="text-slate-400 leading-relaxed">Your data is yours. Every project, post, and log is isolated and protected by modern session auth.</p>
             </div>
             
-            <div class="glass-card rounded-[2.5rem] p-10 space-y-6 group">
-                <div class="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400 group-hover:bg-purple-400 group-hover:text-ink transition-all duration-500">
+            <div class="glass-card rounded-[2.5rem] p-10 space-y-6 group hover:translate-y-[-8px]">
+                <div class="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400 group-hover:bg-purple-400 group-hover:text-ink transition-all duration-500 border border-purple-500/10">
                     <i data-lucide="zap" class="w-8 h-8"></i>
                 </div>
                 <h3 class="text-2xl font-black">High Performance</h3>
                 <p class="text-slate-400 leading-relaxed">Built for speed. Optimized database bootstrapping and minimal server-side overhead for a lag-free experience.</p>
             </div>
             
-            <div class="glass-card rounded-[2.5rem] p-10 space-y-6 group">
-                <div class="w-14 h-14 rounded-2xl bg-coral/10 flex items-center justify-center text-coral group-hover:bg-coral group-hover:text-ink transition-all duration-500">
+            <div class="glass-card rounded-[2.5rem] p-10 space-y-6 group hover:translate-y-[-8px]">
+                <div class="w-14 h-14 rounded-2xl bg-coral/10 flex items-center justify-center text-coral group-hover:bg-coral group-hover:text-ink transition-all duration-500 border border-coral/10">
                     <i data-lucide="terminal" class="w-8 h-8"></i>
                 </div>
                 <h3 class="text-2xl font-black">Developer First</h3>
@@ -79,10 +72,7 @@
                 Join hundreds of engineers who use DevHub to organize their technical lives. No clutter, just code.
             </p>
             <div class="relative z-10">
-                <a href="{% url 'devhub_app:signup' %}" class="inline-flex items-center gap-3 px-10 py-5 rounded-2xl bg-white text-ink font-black text-lg hover:bg-mint hover:scale-105 transition-all">
-                    Create Free Account
-                    <i data-lucide="chevron-right" class="w-6 h-6"></i>
-                </a>
+                {% include "devhub_app/components/action_button.html" with url="/signup/" text="Create Free Account" icon="chevron-right" variant="white" class="inline-flex" aria_label="Create a free account now" %}
             </div>
         </div>
     </section>

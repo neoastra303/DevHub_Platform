@@ -1,0 +1,39 @@
+{% comment %}
+    Component: Action Button
+    Parameters:
+        - type: 'link' (default) or 'button'
+        - url: The URL for the link
+        - variant: 'mint' (default), 'coral', 'white', 'glass'
+        - text: Button text
+        - icon: Optional Lucide icon name
+        - class: Additional CSS classes
+        - aria_label: Required for accessibility
+{% endcomment %}
+
+{% if type == "button" %}
+<button 
+    class="group px-6 py-4 rounded-2xl font-black flex items-center gap-3 transition-all shadow-lg active:scale-95
+    {% if variant == 'coral' %} bg-coral text-ink shadow-coral/10 hover:shadow-coral/20
+    {% elif variant == 'white' %} bg-white text-ink
+    {% elif variant == 'glass' %} bg-white/5 border border-white/5 hover:bg-white/10 text-white
+    {% else %} bg-mint text-ink shadow-mint/10 hover:shadow-mint/20 {% endif %} {{ class }}"
+    aria-label="{{ aria_label }}"
+    {% block button_attrs %}{% endblock %}
+>
+    {% if icon %}<i data-lucide="{{ icon }}" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>{% endif %}
+    <span>{{ text }}</span>
+</button>
+{% else %}
+<a 
+    href="{{ url }}" 
+    class="group px-6 py-4 rounded-2xl font-black flex items-center gap-3 transition-all shadow-lg hover:scale-105 active:scale-95
+    {% if variant == 'coral' %} bg-coral text-ink shadow-coral/10 hover:shadow-coral/20
+    {% elif variant == 'white' %} bg-white text-ink
+    {% elif variant == 'glass' %} bg-white/5 border border-white/5 hover:bg-white/10 text-white
+    {% else %} bg-mint text-ink shadow-mint/10 hover:shadow-mint/20 {% endif %} {{ class }}"
+    aria-label="{{ aria_label }}"
+>
+    {% if icon %}<i data-lucide="{{ icon }}" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>{% endif %}
+    <span>{{ text }}</span>
+</a>
+{% endif %}
