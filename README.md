@@ -40,6 +40,8 @@ We don't just build features; we craft experiences that respect your time and in
 
 ## 🛠️ The Engine Under the Hood
 
+![Tech Stack Showcase](Tech%20Stack%20Showcase.png)
+
 | Component | Technology |
 | :--- | :--- |
 | **Backend** | Django 6.0, Django REST Framework, Celery |
@@ -48,6 +50,8 @@ We don't just build features; we craft experiences that respect your time and in
 | **Observability** | Prometheus |
 | **DevOps** | Docker, Docker Compose, GitHub Actions |
 | **API Docs** | drf-spectacular (OpenAPI 3.0) |
+
+![Architecture Diagram](Architecture%20Diagram.png)
 
 ---
 
