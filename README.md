@@ -24,11 +24,21 @@ This project goes beyond basic CRUD, implementing enterprise patterns such as:
 
 ## 🚀 Key Features
 
+## 🚀 Key Features
+
 ### 🔹 Advanced Backend Engineering
 - **Multi-Tenant Isolation:** Data is strictly scoped to the owner using custom Mixins and Permission classes.
 - **Audit Logging System:** Automated tracking of all Create/Update/Delete actions with rich metadata.
-- **Background Jobs:** Asynchronous workflow for resource-heavy tasks like audit log exports.
-- **Standardized API Contracts:** Unified error handling and response structures for a professional API consumer experience.
+- **Real-time Asynchronous Tasks:** Refactored background jobs to use **Celery & Redis** for scalable processing.
+- **Real-time Notifications:** Instant delivery of updates via **Django Channels & WebSockets**.
+- **Observability:** Integrated **django-prometheus** for real-time system metrics.
+- **Standardized API Contracts:** Unified error handling and versioned API (`/api/v1/`) for professional consumption.
+
+### 🔹 User Experience & Frontend
+- **HTMX Interactivity:** Seamless, partial page updates for "live" interactions (likes, comments).
+- **Advanced Data Analytics:** Integrated **Chart.js** for visualizing engagement trends and skill proficiency (Skill Radar).
+- **Design System:** Standardized Django-based component library (Glass-morphic design).
+- **Live Previews:** Interactive browser mockups on the landing page for immediate product demonstration.
 
 ### 🔹 Security & Protection
 - **Dual-Layer Throttling:** Configurable burst and sustained rate limits for API write operations.
@@ -36,7 +46,7 @@ This project goes beyond basic CRUD, implementing enterprise patterns such as:
 - **Production Hardening:** HSTS, Secure Cookies, XSS filtering, and CSRF protection are active by default.
 
 ### 🔹 DevOps & Quality Assurance
-- **Dockerized Ecosystem:** Multi-container orchestration (Django + PostgreSQL) with health-check-dependent startup.
+- **Dockerized Ecosystem:** Multi-container orchestration (Django, PostgreSQL, Redis, Celery Worker) with health-check-dependent startup.
 - **Automated CI/CD:** GitHub Actions pipeline running `Ruff` (linting), `Bandit` (security scanning), and full test suites.
 - **API Documentation:** Integrated **Swagger UI** and **Redoc** for standardized OpenAPI 3.0 documentation.
 
