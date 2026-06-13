@@ -27,6 +27,12 @@ class TimestampedModel(models.Model):
         abstract = True
 
 
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
+from django.core.validators import MinValueValidator, MaxValueValidator
+
+# ... (Previous imports)
+
 class Skill(models.Model):
     name = models.CharField(max_length=80, unique=True)
     slug = models.SlugField(max_length=90, unique=True)
@@ -57,6 +63,19 @@ class Technology(models.Model):
         if not self.slug:
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
+
+
+class SkillProficiency(models.Model):
+    profile = models.ForeignKey("Profile", on_delete=models.CASCADE, related_name="skill_proficiencies")
+    skill = models.ForeignKey(Skill, on_delete=models.CASCADE)
+    level = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)], default=1)
+
+    class Meta:
+        unique_together = ("profile", "skill")
+
+    def __str__(self):
+        return f"{self.profile.user.username} - {self.skill.name}: {self.level}"
+
 
 
 class Profile(TimestampedModel):
@@ -138,14 +157,31 @@ class Post(TimestampedModel):
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="posts")
     title = models.CharField(max_length=200)
     content = models.TextField()
-    likes_count = models.PositiveIntegerField(default=0)
-    views = models.PositiveIntegerField(default=0)
 
     class Meta:
         ordering = ["-created_at"]
 
     def __str__(self):
         return self.title
+
+
+class PostMetric(models.Model):
+    post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name="metrics")
+    views = models.PositiveIntegerField(default=0)
+    likes = models.PositiveIntegerField(default=0)
+
+    def __str__(self):
+        return f"Metrics for {self.post.title}"
+
+
+class ViewEvent(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="view_events")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
 
 
 class TransactionLog(TimestampedModel):
@@ -180,15 +216,19 @@ class AuditLog(TimestampedModel):
         related_name="audit_logs",
     )
     action = models.CharField(max_length=20, choices=Action.choices)
-    target_type = models.CharField(max_length=60)
-    target_id = models.CharField(max_length=64)
+    
+    # Generic relationship
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.CharField(max_length=64)
+    content_object = GenericForeignKey("content_type", "object_id")
+    
     metadata = models.JSONField(default=dict, blank=True)
 
     class Meta:
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"{self.action}:{self.target_type}:{self.target_id}"
+        return f"{self.action}:{self.content_type}:{self.object_id}"
 
 
 class BackgroundJob(TimestampedModel):

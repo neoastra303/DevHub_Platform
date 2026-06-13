@@ -21,7 +21,7 @@ class ProjectAdmin(admin.ModelAdmin):
 
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
-    list_display = ("title", "author", "likes_count", "views", "created_at")
+    list_display = ("title", "author", "created_at")
     list_filter = ("created_at",)
     search_fields = ("title", "content", "author__username")
 
@@ -47,6 +47,6 @@ class TechnologyAdmin(admin.ModelAdmin):
 
 @admin.register(AuditLog)
 class AuditLogAdmin(admin.ModelAdmin):
-    list_display = ("action", "target_type", "target_id", "actor", "created_at")
-    list_filter = ("action", "target_type", "created_at")
-    search_fields = ("target_type", "target_id", "actor__username")
+    list_display = ("action", "content_type", "object_id", "actor", "created_at")
+    list_filter = ("action", "content_type", "created_at")
+    search_fields = ("object_id", "actor__username")
