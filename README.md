@@ -5,60 +5,32 @@
 [![Python: 3.13](https://img.shields.io/badge/Python-3.13-blue.svg)](https://www.python.org/downloads/release/python-3130/)
 [![Django: 6.0](https://img.shields.io/badge/Django-6.0-green.svg)](https://docs.djangoproject.com/en/6.0/)
 
-DevHub is a production-hardened Django platform designed to demonstrate advanced back-end engineering, robust API design, and modern DevOps practices. It provides a multi-tenant workspace for developers to manage projects, posts, and transactions with full auditability and security.
+DevHub is a **production-hardened, event-driven developer workspace** engineered for scalability, real-time interactivity, and high-fidelity data visualization. It serves as a showcase for modern backend engineering, robust API design, and professional DevOps practices.
 
 Created and maintained by [neoastra303](https://github.com/neoastra303).
 
 ---
 
-## 🏛️ Architecture & Design
+## 🌟 Project Highlights
 
-This project goes beyond basic CRUD, implementing enterprise patterns such as:
-- **Service Layer Pattern:** Business logic decoupled from views.
-- **Relational Taxonomy:** Normalized many-to-many schema for skills and tech stacks.
-- **Advanced Security:** Custom throttling, multi-tenant isolation, and automated audit trails.
-
-**For a deep dive into the system design, see [ARCHITECTURE.md](ARCHITECTURE.md).**
-
----
-
-## 🚀 Key Features
-
-## 🚀 Key Features
-
-### 🔹 Advanced Backend Engineering
-- **Multi-Tenant Isolation:** Data is strictly scoped to the owner using custom Mixins and Permission classes.
-- **Audit Logging System:** Automated tracking of all Create/Update/Delete actions with rich metadata.
-- **Real-time Asynchronous Tasks:** Refactored background jobs to use **Celery & Redis** for scalable processing.
-- **Real-time Notifications:** Instant delivery of updates via **Django Channels & WebSockets**.
-- **Observability:** Integrated **django-prometheus** for real-time system metrics.
-- **Standardized API Contracts:** Unified error handling and versioned API (`/api/v1/`) for professional consumption.
-
-### 🔹 User Experience & Frontend
-- **HTMX Interactivity:** Seamless, partial page updates for "live" interactions (likes, comments).
-- **Advanced Data Analytics:** Integrated **Chart.js** for visualizing engagement trends and skill proficiency (Skill Radar).
-- **Design System:** Standardized Django-based component library (Glass-morphic design).
-- **Live Previews:** Interactive browser mockups on the landing page for immediate product demonstration.
-
-### 🔹 Security & Protection
-- **Dual-Layer Throttling:** Configurable burst and sustained rate limits for API write operations.
-- **IP-Based Protection:** Rate limiting on sensitive endpoints like Login and Signup.
-- **Production Hardening:** HSTS, Secure Cookies, XSS filtering, and CSRF protection are active by default.
-
-### 🔹 DevOps & Quality Assurance
-- **Dockerized Ecosystem:** Multi-container orchestration (Django, PostgreSQL, Redis, Celery Worker) with health-check-dependent startup.
-- **Automated CI/CD:** GitHub Actions pipeline running `Ruff` (linting), `Bandit` (security scanning), and full test suites.
-- **API Documentation:** Integrated **Swagger UI** and **Redoc** for standardized OpenAPI 3.0 documentation.
+*   **Engineered for Scale:** Asynchronous task processing via **Celery & Redis**; real-time notifications with **Django Channels (WebSockets)**.
+*   **Modern, Interactive UI:** Implemented **HTMX** for seamless, partial page updates and **Chart.js** for deep data-driven user insights.
+*   **Enterprise-Grade Security:** Dual-layer API rate limiting, IP-based protection on auth endpoints, and hardened security headers (HSTS, CSRF).
+*   **Observability First:** Real-time system monitoring integrated via **Prometheus**.
+*   **Automated Quality Assurance:** CI/CD pipeline enforcing strict linting (**Ruff**), security scanning (**Bandit**), and comprehensive test coverage.
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Technology Stack
 
-- **Framework:** Django 6.0 & Django REST Framework (DRF)
-- **Database:** PostgreSQL (Production), SQLite (Local Dev)
-- **Tooling:** Docker & Docker Compose
-- **Quality:** Ruff, Bandit, GitHub Actions
-- **API Docs:** drf-spectacular (OpenAPI 3.0)
+| Component | Technology |
+| :--- | :--- |
+| **Backend** | Django 6.0, Django REST Framework, Celery |
+| **Frontend** | Tailwind CSS 3.4, HTMX, Alpine.js, Chart.js |
+| **Real-time** | Redis, Django Channels (WebSockets) |
+| **Observability** | Prometheus |
+| **DevOps** | Docker, Docker Compose, GitHub Actions |
+| **API Docs** | drf-spectacular (OpenAPI 3.0) |
 
 ---
 
@@ -91,6 +63,7 @@ bandit -r . -x ./venv
 ruff check . --fix
 ```
 
-## 🔒 Security
+---
 
+## 🔒 Security Policy
 For reporting vulnerabilities, please refer to our [Security Policy](SECURITY.md).
