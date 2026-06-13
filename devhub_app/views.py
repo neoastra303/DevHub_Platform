@@ -289,6 +289,34 @@ def analytics_summary(request):
     })
 
 
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def profile_skills_analytics(request):
+    """
+    Returns radar chart data for user skills based on projects and profile.
+    """
+    user = request.user
+    profile = user.profile
+    skills = profile.skill_names
+    
+    # Base skills from profile get a value of 80
+    # Technologies from projects add 5 points each
+    data = []
+    labels = skills[:6]  # Limit to 6 for best radar look
+    
+    for skill in labels:
+        score = 60
+        # Check how many projects use this skill (case insensitive)
+        count = Project.objects.filter(owner=user, technologies__name__icontains=skill).count()
+        score += min(count * 10, 40)
+        data.append(score)
+
+    return Response({
+        "labels": labels,
+        "data": data
+    })
+
+
 class OwnerQuerySetMixin(LoginRequiredMixin):
     def get_queryset(self):
         return self.model.objects.filter(**{self.owner_field: self.request.user})

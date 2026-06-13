@@ -16,6 +16,7 @@ from .views import (
     profile_detail,
     transaction_list,
     analytics_summary,
+    profile_skills_analytics,
 )
 
 router = DefaultRouter()
@@ -35,6 +36,7 @@ urlpatterns = [
     path("featured-project/", featured_project, name="api-featured-project"),
     path("transactions/", transaction_list, name="api-transactions"),
     path("analytics/", analytics_summary, name="api-analytics"),
+    path("profile/skills/", profile_skills_analytics, name="api-profile-skills"),
 ]
 
 urlpatterns += router.urls

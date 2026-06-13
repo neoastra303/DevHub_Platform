@@ -1,8 +1,11 @@
 {% extends "devhub_app/base.html" %}
 {% block title %}Profile | DevHub{% endblock %}
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
 {% block body %}
-<main class="max-w-4xl mx-auto px-6 py-12">
-    <div class="grid lg:grid-cols-[1fr_2fr] gap-10">
+<main class="max-w-6xl mx-auto px-6 py-12 animate-in">
+    <div class="grid lg:grid-cols-[1.2fr_2fr] gap-10">
         <!-- Sidebar -->
         <aside class="space-y-6">
             <div class="glass-card rounded-[2.5rem] p-8 text-center relative overflow-hidden group">
@@ -14,15 +17,23 @@
                     <h1 class="text-2xl font-black mb-1">{{ workspace_user.get_full_name|default:workspace_user.username }}</h1>
                     <p class="text-slate-500 text-sm font-bold uppercase tracking-widest">{{ workspace_user.username }}</p>
                     
-                    <div class="mt-8 flex flex-col gap-2">
-                        <div class="flex justify-between text-xs font-bold uppercase tracking-widest text-slate-400 px-2">
+                    <div class="mt-8">
+                        <div class="flex justify-between text-xs font-bold uppercase tracking-widest text-slate-400 px-2 mb-2">
                             <span>Reputation</span>
                             <span class="text-mint">{{ profile.reputation }}</span>
                         </div>
-                        <div class="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                            <div class="h-full bg-mint" style="width: {% widthratio profile.reputation 1000 100 %}%"></div>
+                        <div class="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+                            <div class="h-full bg-mint shadow-[0_0_12px_rgba(115,245,200,0.5)] transition-all duration-1000" style="width: {% widthratio profile.reputation 1000 100 %}%"></div>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Skill Radar Section -->
+            <div class="glass-card rounded-[2.5rem] p-8">
+                <h3 class="text-[10px] uppercase tracking-[0.2em] font-black text-slate-500 mb-6">Expertise Radar</h3>
+                <div class="relative h-[250px]">
+                    <canvas id="skillsRadar"></canvas>
                 </div>
             </div>
 
@@ -52,42 +63,74 @@
                 <form method="post" class="space-y-8">
                     {% csrf_token %}
                     
-                    <!-- Headline -->
-                    <div class="space-y-2 field-shell">
-                        <label class="text-xs uppercase tracking-[0.2em] font-black text-slate-500 ml-1">Professional Headline</label>
-                        {{ form.headline }}
-                        {% if form.headline.errors %}<p class="text-coral text-xs mt-1">{{ form.headline.errors.0 }}</p>{% endif %}
+                    {% include "devhub_app/components/form_field.html" with field=form.headline label="Professional Headline" icon="at-sign" %}
+                    {% include "devhub_app/components/form_field.html" with field=form.bio label="Technical Bio" icon="user" %}
+                    
+                    <div class="space-y-2 group">
+                        <label class="text-xs uppercase tracking-[0.2em] font-bold text-slate-500 ml-1 group-focus-within:text-mint transition-colors">Skills Palette</label>
+                        <div class="relative field-shell">
+                            <div class="absolute left-4 top-[1.1rem] text-slate-500 group-focus-within:text-mint">
+                                <i data-lucide="code-2" class="w-4 h-4"></i>
+                            </div>
+                            <div class="pl-11">{{ form.skills_text }}</div>
+                        </div>
+                        <p class="text-[10px] text-slate-500 mt-2 ml-1">Separate with commas: <span class="text-slate-400">Python, Rust, AWS</span></p>
                     </div>
 
-                    <!-- Bio -->
-                    <div class="space-y-2 field-shell">
-                        <label class="text-xs uppercase tracking-[0.2em] font-black text-slate-500 ml-1">Technical Bio</label>
-                        {{ form.bio }}
-                        {% if form.bio.errors %}<p class="text-coral text-xs mt-1">{{ form.bio.errors.0 }}</p>{% endif %}
-                    </div>
-
-                    <!-- Skills -->
-                    <div class="space-y-2 field-shell">
-                        <label class="text-xs uppercase tracking-[0.2em] font-black text-slate-500 ml-1">Skills Palette</label>
-                        {{ form.skills_text }}
-                        <p class="text-[10px] text-slate-500 mt-2 ml-1">Separate with commas: <span class="text-slate-400">Python, Rust, AWS, Distributed Systems</span></p>
-                    </div>
-
-                    <!-- Avatar Seed -->
-                    <div class="space-y-2 field-shell">
-                        <label class="text-xs uppercase tracking-[0.2em] font-black text-slate-500 ml-1">Avatar Seed (DiceBear)</label>
-                        {{ form.avatar_seed }}
-                        <p class="text-[10px] text-slate-500 mt-2 ml-1">Change this to regenerate your bot avatar.</p>
-                    </div>
+                    {% include "devhub_app/components/form_field.html" with field=form.avatar_seed label="Avatar Seed (DiceBear)" icon="smile" %}
 
                     <div class="pt-8 border-t border-white/5 flex justify-end">
-                        <button type="submit" class="px-10 py-4 rounded-2xl bg-mint text-ink font-black shadow-lg shadow-mint/10 hover:scale-105 transition-all">
-                            Save Identity
-                        </button>
+                        {% include "devhub_app/components/action_button.html" with type="button" text="Save Identity" icon="check" aria_label="Save profile changes" %}
                     </div>
                 </form>
             </div>
         </section>
     </div>
 </main>
+
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+    const canvas = document.getElementById("skillsRadar");
+    if (!canvas) return;
+
+    try {
+        const response = await fetch("/api/v1/devhub/profile/skills/");
+        const payload = await response.json();
+        
+        new Chart(canvas, {
+            type: "radar",
+            data: {
+                labels: payload.labels,
+                datasets: [{
+                    label: "Expertise",
+                    data: payload.data,
+                    backgroundColor: "rgba(115, 245, 200, 0.2)",
+                    borderColor: "#73f5c8",
+                    pointBackgroundColor: "#73f5c8",
+                    pointBorderColor: "#08111b",
+                    pointHoverBackgroundColor: "#fff",
+                    pointHoverBorderColor: "#73f5c8"
+                }]
+            },
+            options: {
+                scales: {
+                    r: {
+                        angleLines: { color: "rgba(255, 255, 255, 0.05)" },
+                        grid: { color: "rgba(255, 255, 255, 0.05)" },
+                        pointLabels: { color: "#64748b", font: { size: 10, weight: "bold" } },
+                        ticks: { display: false, stepSize: 20 },
+                        suggestedMin: 0,
+                        suggestedMax: 100
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    } catch (e) {
+        console.error("Failed to load skills chart", e);
+    }
+});
+</script>
 {% endblock %}
