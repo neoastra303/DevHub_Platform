@@ -7,7 +7,7 @@
 
 ---
 
-![DevHub Hero](DevHub%20README%20Hero.png)
+![DevHub Social Banner](Social%20Banner.png)
 
 ---
 
@@ -19,14 +19,22 @@ Created with heart by [neoastra303](https://github.com/neoastra303).
 
 ---
 
-## 🌟 Why DevHub?
+## 🌟 Features at a Glance
+
+![Features Grid](Features%20Grid.png)
 
 We don't just build features; we craft experiences that respect your time and intellect.
 
-*   **⚡ Built for Velocity:** Asynchronous task processing (Celery & Redis) ensures that your workspace stays snappy, no matter how much load you’re carrying.
+*   **⚡ Built for Velocity:** Asynchronous task processing (Celery & Redis) ensures that your workspace stays snappy.
 *   **✨ Interactive & Alive:** Feel the responsiveness of **HTMX** for seamless, partial page updates, while **Chart.js** turns raw data into a beautiful, meaningful story.
-*   **🛡️ Your Digital Sanctuary:** With dual-layer rate limiting and hardened security headers, your intellectual property remains private and secure—exactly where it belongs.
+*   **🛡️ Your Digital Sanctuary:** With dual-layer rate limiting and hardened security headers, your intellectual property remains private and secure.
 *   **🔭 Total Observability:** Real-time system monitoring via **Prometheus** means you’re always in tune with the health and performance of your platform.
+
+---
+
+## 🗺️ Roadmap
+
+![DevHub Roadmap](DevHub%20Roadmap.png)
 
 ---
 
