@@ -1,0 +1,116 @@
+body {
+    background: #08111b;
+    color: #f8fafc;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
+}
+
+.bg-blobs {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.blob {
+    position: absolute;
+    width: 60vw;
+    height: 60vw;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.15;
+}
+
+.glass-card {
+    background: rgba(17, 32, 50, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(16px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+    border-top-color: rgba(115, 245, 200, 0.3);
+    background: rgba(17, 32, 50, 0.8);
+}
+
+/* Micro-Interactions */
+.animate-in {
+    animation: slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.stagger-1 { animation-delay: 0.1s; }
+.stagger-2 { animation-delay: 0.2s; }
+.stagger-3 { animation-delay: 0.3s; }
+.stagger-4 { animation-delay: 0.4s; }
+.stagger-5 { animation-delay: 0.5s; }
+
+@keyframes slide-up {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.field-shell input,
+.field-shell textarea,
+.field-shell select {
+    width: 100%;
+    background: rgba(8, 17, 27, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1rem;
+    padding: 0.9rem 1rem;
+    color: #f8fafc;
+    transition: all 0.2s;
+}
+
+.field-shell input:focus,
+.field-shell textarea:focus,
+.field-shell select:focus {
+    outline: none;
+    border-color: #73f5c8;
+    background: rgba(8, 17, 27, 0.8);
+    box-shadow: 0 0 0 4px rgba(115, 245, 200, 0.1);
+}
+
+.skeleton {
+    background: linear-gradient(90deg, #112032 25%, #1a2c42 50%, #112032 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+}
+
+@keyframes skeleton-loading {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+[x-cloak] {
+    display: none !important;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #08111b;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #203248;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #73f5c833;
+}

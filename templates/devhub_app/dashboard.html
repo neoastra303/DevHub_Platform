@@ -6,7 +6,7 @@
 {% block body %}
 <main class="max-w-7xl mx-auto px-6 py-10 space-y-12">
     <!-- Header -->
-    <section class="flex flex-wrap items-end justify-between gap-8">
+    <section class="flex flex-wrap items-end justify-between gap-8 animate-in">
         <div class="space-y-2">
             <div class="flex items-center gap-2 text-mint">
                 <span class="w-8 h-[1px] bg-mint/50"></span>
@@ -22,7 +22,7 @@
     </section>
 
     <!-- Stats Grid -->
-    <section data-dashboard-summary class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+    <section data-dashboard-summary class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 animate-in stagger-1">
         <div class="glass-card rounded-[2rem] p-6 group hover:translate-y-[-4px]">
             <div class="w-10 h-10 rounded-xl bg-mint/10 flex items-center justify-center text-mint mb-4 group-hover:bg-mint group-hover:text-ink transition-colors">
                 <i data-lucide="zap" class="w-5 h-5"></i>
@@ -54,7 +54,7 @@
     </section>
 
     <!-- Analytics Dashboard Section -->
-    <section class="grid lg:grid-cols-[1.2fr_.8fr] gap-8">
+    <section class="grid lg:grid-cols-[1.2fr_.8fr] gap-8 animate-in stagger-2">
         <div class="glass-card rounded-[2.5rem] p-8">
             <div class="flex items-center justify-between mb-8">
                 <h2 class="text-2xl font-black tracking-tight">Post Engagement</h2>
@@ -91,7 +91,7 @@
     </section>
 
     <!-- Main Content Grid -->
-    <section class="grid lg:grid-cols-[1.2fr_.8fr] gap-8">
+    <section class="grid lg:grid-cols-[1.2fr_.8fr] gap-8 animate-in stagger-3">
         <!-- Projects -->
         <div class="space-y-6">
             <div class="flex flex-wrap items-center justify-between gap-4">

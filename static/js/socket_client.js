@@ -12,8 +12,18 @@ function initNotificationSocket() {
         const data = JSON.parse(event.data);
         if (window.showToast) {
             window.showToast(data.title, data.message, "info");
-        } else {
-            window.console.log("New Notification:", data);
+        }
+        
+        // Trigger confetti for positive news!
+        if (data.title.toLowerCase().includes("complete") || data.title.toLowerCase().includes("success")) {
+            if (window.confetti) {
+                window.confetti({
+                    particleCount: 150,
+                    spread: 70,
+                    origin: { y: 0.6 },
+                    colors: ["#73f5c8", "#ff8e6e", "#ffffff"]
+                });
+            }
         }
     };
     
