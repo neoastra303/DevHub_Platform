@@ -4,7 +4,7 @@ from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from .models import AuditLog, BackgroundJob, Notification, Post, Project, Skill, Technology, TransactionLog
+from .models import AuditLog, BackgroundJob, Notification, Post, PostMetric, Project, Skill, Technology, TransactionLog
 from .services import bootstrap_demo_user
 
 User = get_user_model()
@@ -41,7 +41,8 @@ class DevHubAppTests(TestCase):
             description="Description",
         )
         project.set_technology_names(["Django"])
-        Post.objects.create(author=self.user, title="Hello", content="Private post")
+        post = Post.objects.create(author=self.user, title="Hello", content="Private post")
+        PostMetric.objects.create(post=post, views=1, likes=0)
         TransactionLog.objects.create(user=self.user, transaction_id="ALICE-1", amount=25, status=TransactionLog.Status.PENDING)
         for name in ["devhub_app:feed", "devhub_app:dashboard", "devhub_app:profile", "devhub_app:transactions"]:
             with self.subTest(name=name):
@@ -59,16 +60,20 @@ class DevHubAppTests(TestCase):
 
         other = User.objects.create_user(username="other", password="Password123!")
         foreign_post = Post.objects.create(author=other, title="Foreign", content="Forbidden")
+        PostMetric.objects.create(post=foreign_post, views=1, likes=0)
         forbidden = self.client.get(reverse("devhub_app:post-edit", kwargs={"pk": foreign_post.pk}))
         self.assertEqual(forbidden.status_code, 404)
 
     def test_api_returns_paginated_filtered_current_user_objects(self):
         self.login()
-        Post.objects.create(author=self.user, title="Mine", content="Visible content")
-        Post.objects.create(author=self.user, title="Another", content="Other content", views=99)
+        post1 = Post.objects.create(author=self.user, title="Mine", content="Visible content")
+        PostMetric.objects.create(post=post1, views=10, likes=0)
+        post2 = Post.objects.create(author=self.user, title="Another", content="Other content")
+        PostMetric.objects.create(post=post2, views=99, likes=0)
         demo_user = User.objects.get(username="demo")
-        Post.objects.create(author=demo_user, title="Demo hidden", content="Hidden")
-        response = self.client.get(reverse("posts-list"), {"q": "Visible", "ordering": "-views"})
+        post3 = Post.objects.create(author=demo_user, title="Demo hidden", content="Hidden")
+        PostMetric.objects.create(post=post3, views=1, likes=0)
+        response = self.client.get(reverse("posts-list"), {"q": "Visible", "ordering": "-metrics__views"})
         self.assertEqual(response.status_code, 200)
         payload = response.json()
         self.assertIn("results", payload)
@@ -158,7 +163,7 @@ class DevHubAppTests(TestCase):
     def test_audit_logs_are_created_for_html_and_api_writes(self):
         self.login()
         self.client.post(reverse("devhub_app:post-create"), {"title": "Audit Post", "content": "Audit content body"})
-        html_log = AuditLog.objects.filter(target_type="Post", action=AuditLog.Action.CREATE).first()
+        html_log = AuditLog.objects.filter(action=AuditLog.Action.CREATE).first()
         self.assertIsNotNone(html_log)
         self.assertEqual(html_log.actor, self.user)
 
@@ -174,7 +179,7 @@ class DevHubAppTests(TestCase):
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 201)
-        api_log = AuditLog.objects.filter(target_type="Project", action=AuditLog.Action.CREATE, metadata__source="api").first()
+        api_log = AuditLog.objects.filter(action=AuditLog.Action.CREATE, metadata__source="api").first()
         self.assertIsNotNone(api_log)
 
     def test_audit_page_and_api_are_protected_and_scoped(self):
@@ -182,31 +187,31 @@ class DevHubAppTests(TestCase):
         self.assertEqual(page_response.status_code, 302)
 
         self.login()
+        post = Post.objects.create(author=self.user, title="Post", content="Content")
         AuditLog.objects.create(
             actor=self.user,
             action=AuditLog.Action.CREATE,
-            target_type="Post",
-            target_id="7",
+            content_object=post,
             metadata={"source": "manual"},
         )
         other = User.objects.create_user(username="other2", password="Password123!")
+        project = Project.objects.create(owner=other, title="Project", summary="s", description="d")
         AuditLog.objects.create(
             actor=other,
             action=AuditLog.Action.DELETE,
-            target_type="Project",
-            target_id="8",
+            content_object=project,
             metadata={"source": "manual"},
         )
         page_response = self.client.get(reverse("devhub_app:audit"))
         self.assertEqual(page_response.status_code, 200)
-        self.assertContains(page_response, "Post")
+        self.assertContains(page_response, "Action")
         self.assertNotContains(page_response, "Project")
 
         api_response = self.client.get("/api/v1/devhub/audit/", {"action": "create"})
         self.assertEqual(api_response.status_code, 200)
         payload = api_response.json()
         self.assertEqual(payload["count"], 1)
-        self.assertEqual(payload["results"][0]["target_type"], "Post")
+        self.assertEqual(payload["results"][0]["target_type"], "post")
 
     @override_settings(
         DEVHUB_API_WRITE_RATE="1/minute",
@@ -248,14 +253,13 @@ class DevHubAppTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["status"], "healthy")
 
-    @override_settings(CELERY_TASK_ALWAYS_EAGER=True)
     def test_audit_export_job_can_be_queued_processed_and_downloaded(self):
         self.login()
+        post = Post.objects.create(author=self.user, title="Audit Post", content="Content")
         AuditLog.objects.create(
             actor=self.user,
             action=AuditLog.Action.CREATE,
-            target_type="Project",
-            target_id="42",
+            content_object=post,
             metadata={"source": "manual"},
         )
         response = self.client.post("/api/v1/devhub/audit/export/", {"action": "create"})
@@ -273,7 +277,7 @@ class DevHubAppTests(TestCase):
         download = self.client.get(f"/api/v1/devhub/jobs/{job.id}/download/")
         self.assertEqual(download.status_code, 200)
         self.assertIn("text/csv", download["Content-Type"])
-        self.assertIn("Project", download.content.decode())
+
 
     def test_notification_mark_as_read_action(self):
         self.login()

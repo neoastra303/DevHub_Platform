@@ -41,8 +41,8 @@
                 {% for log in audit_logs %}
                 <tr class="border-t border-white/10">
                     <td class="p-5 font-bold">{{ log.get_action_display }}</td>
-                    <td class="p-5">{{ log.target_type }}</td>
-                    <td class="p-5 font-mono">{{ log.target_id }}</td>
+                    <td class="p-5">{{ log.content_type.model }}</td>
+                    <td class="p-5 font-mono">{{ log.object_id }}</td>
                     <td class="p-5 text-slate-300">{{ log.created_at|date:"M d, Y H:i" }}</td>
                     <td class="p-5 text-slate-400 text-sm">{{ log.metadata }}</td>
                 </tr>

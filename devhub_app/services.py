@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.db import transaction
 
-from .models import Post, Profile, Project, TransactionLog
+from .models import Post, PostMetric, Profile, Project, TransactionLog
 
 
 def bootstrap_demo_user():
@@ -47,13 +47,12 @@ def bootstrap_demo_user():
             project.set_technology_names(["Django", "Tailwind", "SQLite"])
 
         if not Post.objects.filter(author=user).exists():
-            Post.objects.create(
+            post = Post.objects.create(
                 author=user,
                 title="Welcome to DevHub",
                 content="Create an account to replace this shared demo workspace with your own data.",
-                likes_count=5,
-                views=42,
             )
+            PostMetric.objects.create(post=post, likes=5, views=42)
 
         if not TransactionLog.objects.filter(user=user).exists():
             TransactionLog.objects.create(

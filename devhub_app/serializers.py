@@ -1,14 +1,21 @@
 from rest_framework import serializers
 
-from .models import AuditLog, BackgroundJob, Post, Profile, Project, TransactionLog, Comment, Notification
+from .models import AuditLog, BackgroundJob, Post, PostMetric, Profile, Project, TransactionLog, Comment, Notification
+
+
+class PostMetricSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PostMetric
+        fields = ("views", "likes")
 
 
 class PostSerializer(serializers.ModelSerializer):
     author_name = serializers.CharField(source="author.get_full_name", read_only=True)
+    metrics = PostMetricSerializer(read_only=True)
 
     class Meta:
         model = Post
-        fields = ("id", "title", "content", "likes_count", "views", "author_name", "created_at")
+        fields = ("id", "title", "content", "metrics", "author_name", "created_at")
 
 
 class PostWriteSerializer(serializers.ModelSerializer):
@@ -128,6 +135,11 @@ class TransactionLogSerializer(serializers.ModelSerializer):
 
 class AuditLogSerializer(serializers.ModelSerializer):
     actor_username = serializers.CharField(source="actor.username", read_only=True)
+    target_type = serializers.SerializerMethodField()
+    target_id = serializers.CharField(source="object_id", read_only=True)
+
+    def get_target_type(self, obj):
+        return obj.content_type.model
 
     class Meta:
         model = AuditLog

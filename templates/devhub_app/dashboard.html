@@ -164,11 +164,11 @@
                         <div class="flex gap-4">
                             <div class="flex items-center gap-1.5 text-xs text-slate-500">
                                 <i data-lucide="heart" class="w-3.5 h-3.5"></i>
-                                <span>{{ post.likes_count }}</span>
+                                <span>{{ post.metrics.likes }}</span>
                             </div>
                             <div class="flex items-center gap-1.5 text-xs text-slate-500">
                                 <i data-lucide="eye" class="w-3.5 h-3.5"></i>
-                                <span>{{ post.views }}</span>
+                                <span>{{ post.metrics.views }}</span>
                             </div>
                         </div>
                         <span class="text-[10px] text-slate-600 font-bold uppercase tracking-widest">{{ post.created_at|date:"M d" }}</span>

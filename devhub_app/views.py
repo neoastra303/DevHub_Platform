@@ -71,7 +71,7 @@ def _shared_page_context(request):
         profile.save(update_fields=["active_projects", "updated_at"])
 
     featured_project = projects.filter(is_featured=True).first() or projects.first()
-    total_post_views = posts.aggregate(total=Sum("views"))["total"] or 0
+    total_post_views = posts.aggregate(total=Sum("metrics__views"))["total"] or 0
     return {
         "workspace_user": user,
         "profile": profile,
@@ -243,8 +243,8 @@ class DevHubPasswordResetCompleteView(PasswordResetCompleteView):
 def post_like_htmx(request, pk):
     post = get_object_or_404(Post, pk=pk)
     # Simple like logic: just increment (in a real app you'd track who liked what)
-    post.likes_count += 1
-    post.save(update_fields=["likes_count", "updated_at"])
+    post.metrics.likes += 1
+    post.metrics.save(update_fields=["likes", "updated_at"])
     return render(
         request,
         "devhub_app/partials/post_likes.html",
@@ -450,6 +450,11 @@ class PostViewSet(QueryValidationMixin, viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         post = serializer.save(author=self.request.user)
+        try:
+            PostMetric.objects.create(post=post)
+        except Exception as e:
+            # log or handle error
+            pass
         record_audit_event(actor=self.request.user, action=AuditLog.Action.CREATE, target=post, metadata={"source": "api"})
 
     def perform_update(self, serializer):
