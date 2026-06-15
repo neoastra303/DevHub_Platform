@@ -1,51 +1,80 @@
 {% extends "devhub_app/base.html" %}
 {% block title %}Transactions | DevHub{% endblock %}
 {% block body %}
-<main class="max-w-6xl mx-auto px-6 py-10 grid xl:grid-cols-[1.1fr_.9fr] gap-6">
-    <section class="glass-card rounded-[2rem] p-8">
-        <div class="flex items-center justify-between gap-4 mb-6">
-            <h1 class="text-3xl font-black">Transactions</h1>
-            <span class="text-xs uppercase tracking-[0.25em] text-slate-400">{{ transactions|length }} total</span>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="w-full text-left">
-                <thead class="text-xs uppercase text-slate-400">
-                    <tr>
-                        <th class="pb-4">ID</th>
-                        <th class="pb-4">Amount</th>
-                        <th class="pb-4">Status</th>
-                        <th class="pb-4">Created</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for tx in transactions %}
-                    <tr class="border-t border-white/10">
-                        <td class="py-4 font-mono">{{ tx.transaction_id }}</td>
-                        <td class="py-4 {% if tx.amount > 0 %}text-mint{% else %}text-red-300{% endif %}">${{ tx.amount }}</td>
-                        <td class="py-4">{{ tx.get_status_display }}</td>
-                        <td class="py-4 text-slate-400">{{ tx.created_at|date:"M d, Y" }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="4" class="py-6 text-slate-400">No transactions yet.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </section>
-
-    <section class="glass-card rounded-[2rem] p-8">
-        <h2 class="text-2xl font-black mb-6">Add Transaction</h2>
-        <form method="post" class="space-y-5">
-            {% csrf_token %}
-            {% for field in form %}
-            <div class="field-shell">
-                <label class="block text-sm font-bold mb-2">{{ field.label }}</label>
-                {{ field }}
-                {% for error in field.errors %}<p class="text-sm text-red-300 mt-2">{{ error }}</p>{% endfor %}
+<main class="max-w-7xl mx-auto px-4 md:px-8 py-8">
+    <div class="grid lg:grid-cols-[1.1fr_.9fr] gap-8">
+        <!-- Transactions List -->
+        <section class="space-y-6 animate-in">
+            <div class="flex items-center justify-between gap-4">
+                <div>
+                    <div class="flex items-center gap-2 text-mint mb-2">
+                        <span class="w-8 h-[1px] bg-mint/50"></span>
+                        <p class="uppercase tracking-[0.4em] text-2xs font-bold">Financial</p>
+                    </div>
+                    <h1 class="text-4xl font-black">Transactions</h1>
+                </div>
+                <span class="badge badge-blue">{{ transactions|length }} total</span>
             </div>
-            {% endfor %}
-            <button class="px-6 py-3 rounded-2xl bg-mint text-black font-black">Save Transaction</button>
-        </form>
-    </section>
+
+            <div class="glass-card rounded-[2rem] overflow-hidden">
+                <table class="table-modern">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tx in transactions %}
+                        <tr>
+                            <td><code class="text-xs font-mono bg-white/5 px-2 py-1 rounded">{{ tx.transaction_id|truncatechars:12 }}</code></td>
+                            <td class="font-bold {% if tx.amount > 0 %}text-mint{% else %}text-coral{% endif %}">
+                                {% if tx.amount > 0 %}+{% endif %}${{ tx.amount }}
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if tx.status == 'completed' %}badge-mint
+                                    {% elif tx.status == 'pending' %}badge-amber
+                                    {% elif tx.status == 'failed' %}badge-coral
+                                    {% else %}badge-blue{% endif %}">
+                                    {{ tx.get_status_display }}
+                                </span>
+                            </td>
+                            <td class="text-slate-400 text-sm">{{ tx.created_at|date:"M d, Y" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="text-center py-12 text-slate-500">No transactions yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Add Transaction -->
+        <section class="animate-in stagger-1">
+            <div class="glass-card rounded-[2.5rem] p-6 md:p-8 sticky top-28">
+                <h2 class="text-2xl font-black mb-6 flex items-center gap-2">
+                    <i data-lucide="plus-circle" class="w-6 h-6 text-mint"></i>
+                    Add Transaction
+                </h2>
+                <form method="post" class="space-y-5">
+                    {% csrf_token %}
+                    {% for field in form %}
+                    <div class="field-shell">
+                        <label class="block text-xs uppercase tracking-[0.2em] font-bold text-slate-500 mb-2">{{ field.label }}</label>
+                        {{ field }}
+                        {% for error in field.errors %}<p class="text-xs text-coral mt-1.5 font-bold">{{ error }}</p>{% endfor %}
+                    </div>
+                    {% endfor %}
+                    <button class="w-full px-6 py-4 rounded-2xl bg-mint text-black font-black hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-mint/10">
+                        <i data-lucide="check" class="w-5 h-5 inline-block mr-2"></i>
+                        Save Transaction
+                    </button>
+                </form>
+            </div>
+        </section>
+    </div>
 </main>
 {% endblock %}

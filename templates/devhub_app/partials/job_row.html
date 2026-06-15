@@ -1,6 +1,6 @@
 <tr id="job-row-{{ job.id }}" class="border-t border-white/10"
     {% if job.status == 'queued' or job.status == 'running' %}
-    hx-get="{% url 'devhub_app:api-job-detail' job.id %}"
+    hx-get="{% url 'api-job-detail' job.id %}"
     hx-trigger="every 3s"
     hx-swap="outerHTML"
     {% endif %}
@@ -15,7 +15,7 @@
     <td class="p-5 text-slate-300">{{ job.created_at|date:"M d, Y H:i" }}</td>
     <td class="p-5">
         {% if job.status == "succeeded" %}
-        <a href="{% url 'devhub_app:api-job-download' job.id %}" class="text-mint font-bold hover:underline">Download</a>
+        <a href="{% url 'api-job-download' job.id %}" class="text-mint font-bold hover:underline">Download</a>
         {% elif job.status == "failed" %}
         <span class="text-red-300">{{ job.error_message }}</span>
         {% else %}

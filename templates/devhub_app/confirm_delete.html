@@ -1,14 +1,17 @@
 {% extends "devhub_app/base.html" %}
 {% block title %}Confirm Delete | DevHub{% endblock %}
 {% block body %}
-<main class="max-w-2xl mx-auto px-6 py-10">
-    <section class="glass-card rounded-[2rem] p-8">
-        <h1 class="text-3xl font-black mb-4">Delete {{ object }}</h1>
-        <p class="text-slate-300 mb-6">This action cannot be undone.</p>
-        <form method="post" class="flex gap-3">
+<main class="min-h-[60vh] flex items-center justify-center px-6 py-16">
+    <section class="glass-card rounded-[2.5rem] p-8 md:p-10 shadow-glow max-w-lg w-full text-center">
+        <div class="w-16 h-16 rounded-2xl bg-coral/10 flex items-center justify-center mx-auto mb-6">
+            <i data-lucide="alert-triangle" class="w-8 h-8 text-coral"></i>
+        </div>
+        <h1 class="text-3xl font-black mb-3">Delete {{ object }}</h1>
+        <p class="text-slate-400 mb-8">This action cannot be undone. Are you sure you want to proceed?</p>
+        <form method="post" class="flex items-center justify-center gap-4">
             {% csrf_token %}
-            <button class="px-6 py-3 rounded-2xl bg-red-500 text-black font-black">Delete</button>
-            <a href="{% url 'devhub_app:dashboard' %}" class="px-6 py-3 rounded-2xl bg-white/10">Cancel</a>
+            <a href="{% url 'devhub_app:dashboard' %}" class="px-6 py-3 rounded-2xl bg-white/10 font-bold hover:bg-white/15 transition-all">Cancel</a>
+            <button class="px-8 py-3 rounded-2xl bg-coral text-black font-black hover:scale-105 transition-all shadow-lg shadow-coral/20 ripple-container">Delete</button>
         </form>
     </section>
 </main>

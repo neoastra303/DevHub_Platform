@@ -12,7 +12,7 @@
 
 {% if type == "button" %}
 <button 
-    class="group px-6 py-4 rounded-2xl font-black flex items-center gap-3 transition-all shadow-lg active:scale-95
+    class="group px-6 py-4 rounded-2xl font-black flex items-center gap-3 transition-all shadow-lg active:scale-95 ripple-container
     {% if variant == 'coral' %} bg-coral text-ink shadow-coral/10 hover:shadow-coral/20
     {% elif variant == 'white' %} bg-white text-ink
     {% elif variant == 'glass' %} bg-white/5 border border-white/5 hover:bg-white/10 text-white
@@ -26,7 +26,7 @@
 {% else %}
 <a 
     href="{{ url }}" 
-    class="group px-6 py-4 rounded-2xl font-black flex items-center gap-3 transition-all shadow-lg hover:scale-105 active:scale-95
+    class="group px-6 py-4 rounded-2xl font-black flex items-center gap-3 transition-all shadow-lg hover:scale-105 active:scale-95 ripple-container
     {% if variant == 'coral' %} bg-coral text-ink shadow-coral/10 hover:shadow-coral/20
     {% elif variant == 'white' %} bg-white text-ink
     {% elif variant == 'glass' %} bg-white/5 border border-white/5 hover:bg-white/10 text-white

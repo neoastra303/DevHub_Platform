@@ -1,24 +1,63 @@
 {% extends "devhub_app/base.html" %}
 {% block title %}Login | DevHub{% endblock %}
 {% block body %}
-<main class="max-w-md mx-auto px-6 py-16">
-    <section class="glass-card rounded-[2rem] p-8 shadow-glow">
-        <h1 class="text-3xl font-black mb-6">Log In</h1>
-        <form method="post" class="space-y-5">
-            {% csrf_token %}
-            {% for field in form %}
-            <div class="field-shell">
-                <label class="block text-sm font-bold mb-2">{{ field.label }}</label>
-                {{ field }}
-                {% for error in field.errors %}<p class="text-sm text-red-300 mt-2">{{ error }}</p>{% endfor %}
+<main class="min-h-[80vh] flex items-center justify-center px-6 py-16">
+    <div class="w-full max-w-5xl grid md:grid-cols-[1fr_1fr] gap-0 md:gap-8 items-center">
+        <!-- Brand Side -->
+        <div class="hidden md:block space-y-6">
+            <div class="w-14 h-14 rounded-2xl bg-mint flex items-center justify-center text-ink">
+                <i data-lucide="terminal" class="w-8 h-8"></i>
             </div>
-            {% endfor %}
-            <button class="w-full px-6 py-3 rounded-2xl bg-mint text-black font-black">Log In</button>
-        </form>
-        <div class="flex items-center justify-between gap-4 text-sm text-slate-300 mt-6">
-            <a href="{% url 'password_reset' %}" class="text-mint font-bold">Forgot password?</a>
-            <span>Need an account? <a href="{% url 'devhub_app:signup' %}" class="text-mint font-bold">Create one</a>.</span>
+            <h1 class="text-5xl font-black tracking-tighter leading-[1.1]">
+                Welcome back to<br>
+                <span class="text-mint">DevHub</span>
+            </h1>
+            <p class="text-slate-400 text-lg leading-relaxed max-w-sm">
+                Your developer workspace. Track projects, share insights, and monitor your growth.
+            </p>
+            <div class="flex gap-4 text-sm text-slate-500">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="check" class="w-4 h-4 text-mint"></i>
+                    <span>Real-time analytics</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <i data-lucide="check" class="w-4 h-4 text-mint"></i>
+                    <span>Community feed</span>
+                </div>
+            </div>
         </div>
-    </section>
+
+        <!-- Form -->
+        <section class="glass-card rounded-[2.5rem] p-8 md:p-10 shadow-glow w-full max-w-md mx-auto md:mx-0">
+            <div class="md:hidden flex items-center gap-3 mb-8">
+                <div class="w-10 h-10 rounded-xl bg-mint flex items-center justify-center text-ink">
+                    <i data-lucide="terminal" class="w-6 h-6"></i>
+                </div>
+                <span class="text-xl font-black">DevHub</span>
+            </div>
+
+            <h1 class="text-3xl font-black mb-2">Log In</h1>
+            <p class="text-slate-400 text-sm mb-8">Welcome back, developer.</p>
+
+            <form method="post" class="space-y-5">
+                {% csrf_token %}
+                {% for field in form %}
+                <div class="field-shell">
+                    <label class="block text-xs uppercase tracking-[0.2em] font-bold text-slate-500 mb-2">{{ field.label }}</label>
+                    {{ field }}
+                    {% for error in field.errors %}<p class="text-xs text-coral mt-1.5 font-bold">{{ error }}</p>{% endfor %}
+                </div>
+                {% endfor %}
+                <button class="w-full px-6 py-4 rounded-2xl bg-mint text-black font-black hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-mint/10">
+                    Log In
+                </button>
+            </form>
+
+            <div class="flex items-center justify-between gap-4 text-sm text-slate-400 mt-6">
+                <a href="{% url 'devhub_app:password_reset' %}" class="text-mint font-bold hover:underline">Forgot password?</a>
+                <span>New here? <a href="{% url 'devhub_app:signup' %}" class="text-mint font-bold hover:underline">Create account</a></span>
+            </div>
+        </section>
+    </div>
 </main>
 {% endblock %}

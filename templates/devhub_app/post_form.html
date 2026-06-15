@@ -1,53 +1,55 @@
 {% extends "devhub_app/base.html" %}
 {% block title %}{% if form.instance.pk %}Edit Post{% else %}New Post{% endif %} | DevHub{% endblock %}
 {% block body %}
-<main class="max-w-3xl mx-auto px-6 py-12">
-    <a href="{% url 'devhub_app:feed' %}" class="inline-flex items-center gap-2 text-slate-500 hover:text-coral transition-colors mb-8 group">
+<main class="max-w-3xl mx-auto px-4 md:px-8 py-8">
+    <a href="{% url 'devhub_app:feed' %}" class="inline-flex items-center gap-2 text-slate-500 hover:text-coral transition-colors mb-6 group">
         <i data-lucide="arrow-left" class="w-4 h-4 group-hover:-translate-x-1 transition-transform"></i>
         Back to Feed
     </a>
 
-    <section class="glass-card rounded-[2.5rem] p-8 md:p-12 shadow-glow">
-        <header class="mb-10">
-            <h1 class="text-4xl font-black tracking-tight mb-3">
+    <section class="glass-card rounded-[2.5rem] p-6 md:p-10 shadow-glow">
+        <header class="mb-8">
+            <div class="flex items-center gap-2 text-coral mb-2">
+                <span class="w-8 h-[1px] bg-coral/50"></span>
+                <p class="uppercase tracking-[0.4em] text-2xs font-bold">Post</p>
+            </div>
+            <h1 class="text-3xl md:text-4xl font-black tracking-tight mb-2">
                 {% if form.instance.pk %}Refine Insight{% else %}New Post{% endif %}
             </h1>
             <p class="text-slate-400">Share technical updates or breakthroughs with the community.</p>
         </header>
 
-        <form method="post" class="space-y-8">
+        <form method="post" class="space-y-6">
             {% csrf_token %}
             
-            <!-- Title -->
             <div class="space-y-2 field-shell" x-data="{ count: {{ form.title.value|default:''|length }} }">
                 <div class="flex items-center justify-between ml-1">
                     <label class="text-xs uppercase tracking-[0.2em] font-black text-slate-500">Post Title</label>
-                    <span class="text-[10px] text-slate-600 font-bold" :class="count < 3 ? 'text-coral' : 'text-mint'">
+                    <span class="text-2xs text-slate-600 font-bold" :class="count < 3 ? 'text-coral' : 'text-mint'">
                         <span x-text="count"></span> chars (min 3)
                     </span>
                 </div>
                 <input type="text" name="title" value="{{ form.title.value|default:'' }}" @input="count = $el.value.length" class="w-full">
-                {% if form.title.errors %}<p class="text-coral text-xs mt-1">{{ form.title.errors.0 }}</p>{% endif %}
+                {% if form.title.errors %}<p class="text-xs text-coral mt-1 font-bold">{{ form.title.errors.0 }}</p>{% endif %}
             </div>
 
-            <!-- Content -->
             <div class="space-y-2 field-shell" x-data="{ count: {{ form.content.value|default:''|length }} }">
                 <div class="flex items-center justify-between ml-1">
                     <label class="text-xs uppercase tracking-[0.2em] font-black text-slate-500">Content Body</label>
-                    <span class="text-[10px] text-slate-600 font-bold" :class="count < 10 ? 'text-coral' : 'text-mint'">
+                    <span class="text-2xs text-slate-600 font-bold" :class="count < 10 ? 'text-coral' : 'text-mint'">
                         <span x-text="count"></span> chars (min 10)
                     </span>
                 </div>
                 <textarea name="content" rows="10" @input="count = $el.value.length" class="w-full">{{ form.content.value|default:'' }}</textarea>
-                <p class="text-[10px] text-slate-500 mt-2 ml-1">Markdown support for code blocks is fully enabled.</p>
-                {% if form.content.errors %}<p class="text-coral text-xs mt-1">{{ form.content.errors.0 }}</p>{% endif %}
+                <p class="text-2xs text-slate-500 mt-2 ml-1">Markdown support for code blocks is fully enabled.</p>
+                {% if form.content.errors %}<p class="text-xs text-coral mt-1 font-bold">{{ form.content.errors.0 }}</p>{% endif %}
             </div>
 
-            <div class="pt-8 border-t border-white/5 flex flex-wrap items-center justify-between gap-4">
+            <div class="pt-6 border-t border-white/5 flex flex-wrap items-center justify-between gap-4">
                 <p class="text-xs text-slate-500">Your post will be immediately visible on the global feed.</p>
                 <div class="flex items-center gap-4">
                     <a href="{% url 'devhub_app:feed' %}" class="px-6 py-3 rounded-xl font-bold text-slate-400 hover:text-white transition-colors">Discard</a>
-                    <button type="submit" class="px-10 py-4 rounded-xl bg-coral text-ink font-black shadow-lg shadow-coral/10 hover:scale-105 transition-all">
+                    <button type="submit" class="px-8 py-4 rounded-xl bg-coral text-ink font-black shadow-lg shadow-coral/10 hover:scale-105 transition-all ripple-container">
                         {% if form.instance.pk %}Save Changes{% else %}Publish Now{% endif %}
                     </button>
                 </div>

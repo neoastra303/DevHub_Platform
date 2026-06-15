@@ -4,42 +4,73 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 {% endblock %}
 {% block body %}
-<main class="max-w-6xl mx-auto px-6 py-12 animate-in">
-    <div class="grid lg:grid-cols-[1.2fr_2fr] gap-10">
+<main class="max-w-7xl mx-auto px-4 md:px-8 py-8 animate-in">
+    <div class="grid lg:grid-cols-[320px_1fr] gap-8">
         <!-- Sidebar -->
         <aside class="space-y-6">
+            <!-- Profile Card -->
             <div class="glass-card rounded-[2.5rem] p-8 text-center relative overflow-hidden group">
                 <div class="absolute inset-0 bg-mint/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <div class="relative z-10">
-                    <div class="w-32 h-32 rounded-[2rem] bg-white/5 border border-white/10 p-2 mx-auto mb-6 shadow-glow">
+                    <div class="w-28 h-28 rounded-[2rem] bg-white/5 border border-white/10 p-2 mx-auto mb-5 shadow-glow">
                         <img src="https://api.dicebear.com/7.x/bottts/svg?seed={{ profile.avatar_seed }}" alt="Avatar" class="w-full h-full object-cover rounded-[1.5rem]">
                     </div>
                     <h1 class="text-2xl font-black mb-1">{{ workspace_user.get_full_name|default:workspace_user.username }}</h1>
-                    <p class="text-slate-500 text-sm font-bold uppercase tracking-widest">{{ workspace_user.username }}</p>
+                    <p class="text-slate-500 text-sm font-bold uppercase tracking-widest">@{{ workspace_user.username }}</p>
                     
-                    <div class="mt-8">
-                        <div class="flex justify-between text-xs font-bold uppercase tracking-widest text-slate-400 px-2 mb-2">
+                    {% if profile.headline %}
+                    <p class="text-slate-400 text-sm mt-4 px-2">{{ profile.headline }}</p>
+                    {% endif %}
+                    
+                    <div class="mt-6">
+                        <div class="flex justify-between text-2xs font-bold uppercase tracking-widest text-slate-400 px-2 mb-2">
                             <span>Reputation</span>
-                            <span class="text-mint">{{ profile.reputation }}</span>
+                            <span class="text-mint" data-count-up="{{ profile.reputation }}">{{ profile.reputation }}</span>
                         </div>
-                        <div class="w-full h-2 bg-white/5 rounded-full overflow-hidden">
-                            <div class="h-full bg-mint shadow-[0_0_12px_rgba(115,245,200,0.5)] transition-all duration-1000" style="width: {% widthratio profile.reputation 1000 100 %}%"></div>
+                        <div class="progress-bar">
+                            <div class="progress-bar-fill" style="width: {% widthratio profile.reputation 1000 100 %}%"></div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Skill Radar Section -->
-            <div class="glass-card rounded-[2.5rem] p-8">
-                <h3 class="text-[10px] uppercase tracking-[0.2em] font-black text-slate-500 mb-6">Expertise Radar</h3>
-                <div class="relative h-[250px]">
+            <div class="glass-card rounded-[2.5rem] p-6">
+                <h3 class="text-2xs uppercase tracking-[0.2em] font-black text-slate-500 mb-4">Expertise Radar</h3>
+                <div class="relative h-[220px]">
                     <canvas id="skillsRadar"></canvas>
                 </div>
             </div>
 
+            <!-- Achievements / Badges -->
             <div class="glass-card rounded-[2rem] p-6">
-                <h3 class="text-[10px] uppercase tracking-[0.2em] font-black text-slate-500 mb-4">Account Metadata</h3>
-                <div class="space-y-4">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-2xs uppercase tracking-[0.2em] font-black text-slate-500">Badges</h3>
+                    <span class="text-2xs text-slate-600 font-bold">3 earned</span>
+                </div>
+                <div class="grid grid-cols-5 gap-3">
+                    <div class="aspect-square rounded-2xl bg-mint/10 border border-mint/20 flex items-center justify-center text-mint group hover:bg-mint hover:text-ink transition-all cursor-default" data-tooltip="First Post">
+                        <i data-lucide="edit-3" class="w-5 h-5"></i>
+                    </div>
+                    <div class="aspect-square rounded-2xl bg-coral/10 border border-coral/20 flex items-center justify-center text-coral group hover:bg-coral hover:text-ink transition-all cursor-default" data-tooltip="Project Master">
+                        <i data-lucide="layers" class="w-5 h-5"></i>
+                    </div>
+                    <div class="aspect-square rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 group hover:bg-purple-400 hover:text-ink transition-all cursor-default" data-tooltip="Early Adopter">
+                        <i data-lucide="zap" class="w-5 h-5"></i>
+                    </div>
+                    <div class="aspect-square rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center text-slate-600 opacity-40">
+                        <i data-lucide="lock" class="w-4 h-4"></i>
+                    </div>
+                    <div class="aspect-square rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center text-slate-600 opacity-40">
+                        <i data-lucide="lock" class="w-4 h-4"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account Metadata -->
+            <div class="glass-card rounded-[2rem] p-6">
+                <h3 class="text-2xs uppercase tracking-[0.2em] font-black text-slate-500 mb-4">Account</h3>
+                <div class="space-y-3">
                     <div class="flex items-center gap-3">
                         <i data-lucide="calendar" class="w-4 h-4 text-slate-600"></i>
                         <span class="text-xs text-slate-400">Joined {{ workspace_user.date_joined|date:"M Y" }}</span>
@@ -52,37 +83,75 @@
             </div>
         </aside>
 
-        <!-- Main Form -->
+        <!-- Main Content -->
         <section class="space-y-6">
-            <div class="glass-card rounded-[2.5rem] p-8 md:p-12">
-                <header class="mb-10">
+            <!-- Identity Settings -->
+            <div class="glass-card rounded-[2.5rem] p-6 md:p-10">
+                <header class="mb-8">
                     <h2 class="text-3xl font-black tracking-tight">Identity Settings</h2>
-                    <p class="text-slate-400 mt-2">Update your public presence and professional headline.</p>
+                    <p class="text-slate-400 mt-1">Update your public presence and professional headline.</p>
                 </header>
 
-                <form method="post" class="space-y-8">
+                <form method="post" class="space-y-6">
                     {% csrf_token %}
                     
                     {% include "devhub_app/components/form_field.html" with field=form.headline label="Professional Headline" icon="at-sign" %}
                     {% include "devhub_app/components/form_field.html" with field=form.bio label="Technical Bio" icon="user" %}
                     
                     <div class="space-y-2 group">
-                        <label class="text-xs uppercase tracking-[0.2em] font-bold text-slate-500 ml-1 group-focus-within:text-mint transition-colors">Skills Palette</label>
+                        <label class="text-2xs uppercase tracking-[0.2em] font-bold text-slate-500 ml-1 group-focus-within:text-mint transition-colors">Skills Palette</label>
                         <div class="relative field-shell">
                             <div class="absolute left-4 top-[1.1rem] text-slate-500 group-focus-within:text-mint">
                                 <i data-lucide="code-2" class="w-4 h-4"></i>
                             </div>
                             <div class="pl-11">{{ form.skills_text }}</div>
                         </div>
-                        <p class="text-[10px] text-slate-500 mt-2 ml-1">Separate with commas: <span class="text-slate-400">Python, Rust, AWS</span></p>
+                        <p class="text-2xs text-slate-500 mt-2 ml-1">Separate with commas: <span class="text-slate-400">Python, Rust, AWS</span></p>
                     </div>
 
                     {% include "devhub_app/components/form_field.html" with field=form.avatar_seed label="Avatar Seed (DiceBear)" icon="smile" %}
 
-                    <div class="pt-8 border-t border-white/5 flex justify-end">
+                    <div class="pt-6 border-t border-white/5 flex justify-end">
                         {% include "devhub_app/components/action_button.html" with type="button" text="Save Identity" icon="check" aria_label="Save profile changes" %}
                     </div>
                 </form>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="glass-card rounded-[2.5rem] p-6 md:p-10">
+                <h2 class="text-2xl font-black tracking-tight mb-6">Recent Activity</h2>
+                <div class="space-y-4">
+                    <div class="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5">
+                        <div class="w-10 h-10 rounded-xl bg-mint/10 flex items-center justify-center text-mint">
+                            <i data-lucide="file-text" class="w-5 h-5"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-bold">Published a new post</p>
+                            <p class="text-2xs text-slate-500">Building a Real-Time Chat System with Django Channels</p>
+                        </div>
+                        <span class="text-2xs text-slate-600">2h ago</span>
+                    </div>
+                    <div class="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5">
+                        <div class="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400">
+                            <i data-lucide="folder" class="w-5 h-5"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-bold">Updated project</p>
+                            <p class="text-2xs text-slate-500">DevHub Platform - Added WebSocket support</p>
+                        </div>
+                        <span class="text-2xs text-slate-600">1d ago</span>
+                    </div>
+                    <div class="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5">
+                        <div class="w-10 h-10 rounded-xl bg-coral/10 flex items-center justify-center text-coral">
+                            <i data-lucide="award" class="w-5 h-5"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-bold">Earned badge</p>
+                            <p class="text-2xs text-slate-500">First Post - Completed!</p>
+                        </div>
+                        <span class="text-2xs text-slate-600">3d ago</span>
+                    </div>
+                </div>
             </div>
         </section>
     </div>
@@ -94,7 +163,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!canvas) return;
 
     try {
-        const response = await fetch("/api/v1/devhub/profile/skills/");
+        const response = await fetch("{% url 'api-profile-skills' %}");
         const payload = await response.json();
         
         new Chart(canvas, {
@@ -104,20 +173,23 @@ document.addEventListener("DOMContentLoaded", async () => {
                 datasets: [{
                     label: "Expertise",
                     data: payload.data,
-                    backgroundColor: "rgba(115, 245, 200, 0.2)",
+                    backgroundColor: "rgba(115, 245, 200, 0.15)",
                     borderColor: "#73f5c8",
                     pointBackgroundColor: "#73f5c8",
                     pointBorderColor: "#08111b",
                     pointHoverBackgroundColor: "#fff",
-                    pointHoverBorderColor: "#73f5c8"
+                    pointHoverBorderColor: "#73f5c8",
+                    borderWidth: 2
                 }]
             },
             options: {
+                responsive: true,
+                maintainAspectRatio: false,
                 scales: {
                     r: {
                         angleLines: { color: "rgba(255, 255, 255, 0.05)" },
                         grid: { color: "rgba(255, 255, 255, 0.05)" },
-                        pointLabels: { color: "#64748b", font: { size: 10, weight: "bold" } },
+                        pointLabels: { color: "#64748b", font: { size: 9, weight: "bold" } },
                         ticks: { display: false, stepSize: 20 },
                         suggestedMin: 0,
                         suggestedMax: 100

@@ -1,0 +1,23 @@
+{% comment %}
+    Component: Empty State
+    Parameters:
+        - icon: Lucide icon name (default: "inbox")
+        - title: Heading text
+        - description: Subtitle text
+        - action_url: URL for CTA button
+        - action_text: Button text
+        - action_icon: Optional Lucide icon for button
+{% endcomment %}
+<div class="glass-card-dashed rounded-[2rem] p-12 md:p-16 text-center">
+    <div class="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-6">
+        <i data-lucide="{{ icon|default:'inbox' }}" class="w-10 h-10 text-slate-500"></i>
+    </div>
+    <h3 class="text-2xl font-black mb-3">{{ title }}</h3>
+    <p class="text-slate-400 mb-8 max-w-md mx-auto">{{ description }}</p>
+    {% if action_url and action_text %}
+    <a href="{{ action_url }}" class="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-mint text-ink font-black hover:scale-105 transition-all shadow-lg shadow-mint/10">
+        {% if action_icon %}<i data-lucide="{{ action_icon }}" class="w-5 h-5"></i>{% endif %}
+        {{ action_text }}
+    </a>
+    {% endif %}
+</div>

@@ -23,8 +23,8 @@
     {% block head %}{% endblock %}
 </head>
 <body
-    class="min-h-screen pb-20 md:pb-0"
-    x-data="{ commandPaletteOpen: false }"
+    class="min-h-screen {% if user.is_authenticated %}md:pl-64{% endif %} transition-all duration-300"
+    x-data="{ sidebarOpen: false, commandPaletteOpen: false }"
     @open-command-palette.window="commandPaletteOpen = true"
     @close-command-palette.window="commandPaletteOpen = false"
 >
@@ -39,18 +39,31 @@
         <div class="blob bg-coral bottom-[-10%] right-[-10%] animate-float-delayed"></div>
     </div>
 
+    <!-- Desktop Sidebar (authenticated only) -->
+    {% if user.is_authenticated %}
+        {% include "devhub_app/components/sidebar.html" %}
+    {% endif %}
+
+    <!-- Top Header (authenticated: slim, unauthenticated: full) -->
     <header class="border-b border-white/5 backdrop-blur-md sticky top-0 z-40 bg-ink/80">
-        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
-            <div class="flex items-center gap-8">
-                <a href="{% url 'devhub_app:landing' %}" class="text-2xl font-black tracking-tighter flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-lg bg-mint flex items-center justify-center text-ink">
-                        <i data-lucide="terminal" class="w-5 h-5"></i>
+        <div class="{% if user.is_authenticated %}px-4 md:px-8{% else %}max-w-7xl mx-auto px-6{% endif %} py-3 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+                {% if user.is_authenticated %}
+                    <!-- Mobile hamburger -->
+                    <button @click="sidebarOpen = !sidebarOpen" class="md:hidden p-2 rounded-xl hover:bg-white/5 transition-colors">
+                        <i data-lucide="menu" class="w-5 h-5"></i>
+                    </button>
+                {% endif %}
+                
+                <a href="{% url 'devhub_app:landing' %}" class="text-xl font-black tracking-tighter flex items-center gap-2 md:hidden">
+                    <div class="w-7 h-7 rounded-lg bg-mint flex items-center justify-center text-ink">
+                        <i data-lucide="terminal" class="w-4 h-4"></i>
                     </div>
                     DevHub
                 </a>
                 
                 {% if user.is_authenticated %}
-                <div class="hidden md:flex items-center gap-1 bg-white/5 rounded-full p-1 border border-white/5">
+                <div class="hidden md:flex items-center gap-1 bg-white/5 rounded-full p-0.5 border border-white/5">
                     <a href="{% url 'devhub_app:dashboard' %}" class="px-4 py-1.5 rounded-full text-sm font-medium hover:bg-white/10 transition-colors {% if request.resolver_match.url_name == 'dashboard' %}bg-white/10 text-mint{% endif %}">Dashboard</a>
                     <a href="{% url 'devhub_app:feed' %}" class="px-4 py-1.5 rounded-full text-sm font-medium hover:bg-white/10 transition-colors {% if request.resolver_match.url_name == 'feed' %}bg-white/10 text-mint{% endif %}">Feed</a>
                 </div>
@@ -64,9 +77,12 @@
                     <kbd class="px-1.5 py-0.5 rounded bg-white/10 text-[10px] font-bold">CTRL K</kbd>
                 </button>
                 
-                <div class="hidden md:flex items-center gap-3 ml-4">
-                    <a href="{% url 'devhub_app:profile' %}" class="w-10 h-10 rounded-full overflow-hidden border-2 border-mint/20 hover:border-mint transition-all">
-                        <img src="https://api.dicebear.com/7.x/bottts/svg?seed={{ user.profile.avatar_seed }}" alt="Avatar" class="w-full h-full object-cover">
+                <div class="flex items-center gap-3 ml-2">
+                    <a href="{% url 'devhub_app:profile' %}" class="relative">
+                        <div class="w-9 h-9 rounded-xl overflow-hidden border-2 border-mint/20 hover:border-mint transition-all">
+                            <img src="https://api.dicebear.com/7.x/bottts/svg?seed={{ user.profile.avatar_seed }}" alt="Avatar" class="w-full h-full object-cover">
+                        </div>
+                        <span class="notification-dot"></span>
                     </a>
                 </div>
                 
@@ -75,12 +91,55 @@
                     <button class="text-sm font-bold text-slate-400 hover:text-coral transition-colors">Sign Out</button>
                 </form>
                 {% else %}
-                <a href="{% url 'login' %}" class="px-5 py-2 rounded-full text-sm font-bold hover:text-mint transition-colors">Login</a>
+                <a href="{% url 'devhub_app:login' %}" class="px-5 py-2 rounded-full text-sm font-bold hover:text-mint transition-colors">Login</a>
                 <a href="{% url 'devhub_app:signup' %}" class="px-6 py-2.5 rounded-full bg-mint text-black font-black text-sm shadow-lg shadow-mint/20 hover:scale-105 transition-transform">Get Started</a>
                 {% endif %}
             </nav>
         </div>
     </header>
+
+    <!-- Mobile Sidebar Overlay -->
+    <div x-show="sidebarOpen" 
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 md:hidden"
+         x-cloak>
+        <div class="fixed inset-0 bg-ink/90 backdrop-blur-sm" @click="sidebarOpen = false"></div>
+        <div class="fixed left-0 top-0 bottom-0 w-72 bg-ink border-r border-white/10 p-6 overflow-y-auto"
+             @click.away="sidebarOpen = false">
+            <div class="flex items-center justify-between mb-8">
+                <a href="{% url 'devhub_app:dashboard' %}" class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-mint flex items-center justify-center text-ink">
+                        <i data-lucide="terminal" class="w-5 h-5"></i>
+                    </div>
+                    <span class="text-lg font-black tracking-tight">DevHub</span>
+                </a>
+                <button @click="sidebarOpen = false" class="p-2 rounded-xl hover:bg-white/5 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <nav class="space-y-1">
+                <a href="{% url 'devhub_app:dashboard' %}" class="sidebar-link"><i data-lucide="layout-dashboard"></i>Dashboard</a>
+                <a href="{% url 'devhub_app:feed' %}" class="sidebar-link"><i data-lucide="rss"></i>Feed</a>
+                <a href="{% url 'devhub_app:project-create' %}" class="sidebar-link"><i data-lucide="folder-plus"></i>New Project</a>
+                <a href="{% url 'devhub_app:post-create' %}" class="sidebar-link"><i data-lucide="pen-tool"></i>New Post</a>
+                <hr class="my-4 border-white/5">
+                <a href="{% url 'devhub_app:audit' %}" class="sidebar-link"><i data-lucide="activity"></i>Audit Log</a>
+                <a href="{% url 'devhub_app:transactions' %}" class="sidebar-link"><i data-lucide="credit-card"></i>Transactions</a>
+                <hr class="my-4 border-white/5">
+                <a href="{% url 'devhub_app:profile' %}" class="sidebar-link"><i data-lucide="user"></i>Profile</a>
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button class="sidebar-link w-full text-coral"><i data-lucide="log-out"></i>Sign Out</button>
+                </form>
+            </nav>
+        </div>
+    </div>
 
     <!-- Command Palette Overlay -->
     <div x-show="commandPaletteOpen" 
@@ -105,7 +164,7 @@
                        autofocus>
             </div>
             <div class="p-2">
-                <p class="text-[10px] uppercase tracking-[0.2em] text-slate-500 px-3 py-2">Quick Navigation</p>
+                <p class="text-2xs uppercase tracking-[0.2em] text-slate-500 px-3 py-2">Quick Navigation</p>
                 <div class="grid grid-cols-1 gap-1">
                     <a href="{% url 'devhub_app:dashboard' %}" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-mint/10 group transition-all">
                         <i data-lucide="layout-dashboard" class="w-5 h-5 text-slate-400 group-hover:text-mint"></i>
@@ -122,8 +181,8 @@
                 </div>
             </div>
             <div class="bg-white/5 px-5 py-3 flex justify-between items-center">
-                <span class="text-[10px] text-slate-500">Tip: Use arrows to navigate</span>
-                <kbd class="px-2 py-1 rounded bg-black/30 text-[10px] text-slate-400">ESC to close</kbd>
+                <span class="text-2xs text-slate-500">Tip: Use arrows to navigate</span>
+                <kbd class="px-2 py-1 rounded bg-black/30 text-2xs text-slate-400">ESC to close</kbd>
             </div>
         </div>
     </div>
@@ -137,7 +196,7 @@
     </div>
     {% endif %}
 
-    <main id="main-content" class="relative z-10">
+    <main id="main-content" class="relative z-10 transition-all duration-500">
         {% block body %}{% endblock %}
     </main>
 
@@ -145,23 +204,23 @@
     {% if user.is_authenticated %}
     <nav class="md:hidden fixed bottom-0 inset-x-0 bg-ink/90 backdrop-blur-xl border-t border-white/10 z-40 px-6 py-3 flex items-center justify-between">
         <a href="{% url 'devhub_app:dashboard' %}" class="flex flex-col items-center gap-1 text-slate-400 {% if request.resolver_match.url_name == 'dashboard' %}text-mint{% endif %}">
-            <i data-lucide="layout-dashboard" class="w-6 h-6"></i>
-            <span class="text-[10px] font-bold uppercase tracking-widest">Home</span>
+            <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+            <span class="text-2xs font-bold uppercase tracking-widest">Home</span>
         </a>
         <a href="{% url 'devhub_app:feed' %}" class="flex flex-col items-center gap-1 text-slate-400 {% if request.resolver_match.url_name == 'feed' %}text-mint{% endif %}">
-            <i data-lucide="rss" class="w-6 h-6"></i>
-            <span class="text-[10px] font-bold uppercase tracking-widest">Feed</span>
+            <i data-lucide="rss" class="w-5 h-5"></i>
+            <span class="text-2xs font-bold uppercase tracking-widest">Feed</span>
         </a>
         <button @click="commandPaletteOpen = true" class="w-12 h-12 rounded-full bg-mint text-ink flex items-center justify-center -mt-8 shadow-lg shadow-mint/30 border-4 border-ink">
-            <i data-lucide="plus" class="w-6 h-6"></i>
+            <i data-lucide="plus" class="w-5 h-5"></i>
         </button>
         <a href="{% url 'devhub_app:audit' %}" class="flex flex-col items-center gap-1 text-slate-400 {% if request.resolver_match.url_name == 'audit' %}text-mint{% endif %}">
-            <i data-lucide="activity" class="w-6 h-6"></i>
-            <span class="text-[10px] font-bold uppercase tracking-widest">Audit</span>
+            <i data-lucide="activity" class="w-5 h-5"></i>
+            <span class="text-2xs font-bold uppercase tracking-widest">Audit</span>
         </a>
         <a href="{% url 'devhub_app:profile' %}" class="flex flex-col items-center gap-1 text-slate-400 {% if request.resolver_match.url_name == 'profile' %}text-mint{% endif %}">
-            <i data-lucide="user" class="w-6 h-6"></i>
-            <span class="text-[10px] font-bold uppercase tracking-widest">You</span>
+            <i data-lucide="user" class="w-5 h-5"></i>
+            <span class="text-2xs font-bold uppercase tracking-widest">You</span>
         </a>
     </nav>
     {% endif %}
@@ -170,5 +229,6 @@
     <script src="https://unpkg.com/htmx.org@2.0.0"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
     <script type="module" src="{% static 'js/socket_client.js' %}"></script>
+    <script src="{% static 'js/ui/micro.js' %}"></script>
 </body>
 </html>

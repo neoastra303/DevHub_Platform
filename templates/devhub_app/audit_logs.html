@@ -1,91 +1,143 @@
 {% extends "devhub_app/base.html" %}
 {% block title %}Audit Log | DevHub{% endblock %}
 {% block body %}
-<main class="max-w-6xl mx-auto px-6 py-10">
-    <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+<main class="max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-8">
+    <!-- Header -->
+    <div class="flex flex-wrap items-start justify-between gap-6 animate-in">
         <div>
-            <p class="uppercase tracking-[0.3em] text-xs text-mint mb-3">History</p>
+            <div class="flex items-center gap-2 text-mint mb-2">
+                <span class="w-8 h-[1px] bg-mint/50"></span>
+                <p class="uppercase tracking-[0.4em] text-2xs font-bold">History</p>
+            </div>
             <h1 class="text-4xl font-black">Audit Log</h1>
+            <p class="text-slate-400 mt-1">Track every change made across your workspace.</p>
         </div>
-        <form method="get" class="flex flex-wrap gap-3">
-            <select name="action" class="bg-white/10 rounded-xl px-4 py-3">
-                <option value="">All actions</option>
-                <option value="create" {% if request.GET.action == "create" %}selected{% endif %}>Create</option>
-                <option value="update" {% if request.GET.action == "update" %}selected{% endif %}>Update</option>
-                <option value="delete" {% if request.GET.action == "delete" %}selected{% endif %}>Delete</option>
-            </select>
-            <input type="text" name="target_type" value="{{ request.GET.target_type }}" placeholder="Target type" class="bg-white/10 rounded-xl px-4 py-3">
-            <button class="px-5 py-3 rounded-xl bg-mint text-black font-bold">Filter</button>
-        </form>
-    </div>
-    <div class="flex flex-wrap gap-3 mb-8">
-        <form method="post" action="/api/v1/devhub/audit/export/" class="flex flex-wrap gap-3">
+        <form method="post" action="{% url 'api-audit-export' %}" class="flex items-center gap-3">
             {% csrf_token %}
             <input type="hidden" name="action" value="{{ request.GET.action }}">
             <input type="hidden" name="target_type" value="{{ request.GET.target_type }}">
-            <button class="px-5 py-3 rounded-xl bg-coral text-black font-bold">Queue CSV Export</button>
+            <button class="px-5 py-3 rounded-2xl bg-coral text-black font-bold text-sm hover:scale-105 transition-all">
+                <i data-lucide="download" class="w-4 h-4 inline-block mr-1.5"></i>
+                Export CSV
+            </button>
         </form>
     </div>
-    <div class="glass-card rounded-[2rem] overflow-hidden">
-        <table class="w-full text-left">
-            <thead class="text-xs uppercase text-slate-400 bg-white/5">
-                <tr>
-                    <th class="p-5">Action</th>
-                    <th class="p-5">Target</th>
-                    <th class="p-5">Target ID</th>
-                    <th class="p-5">When</th>
-                    <th class="p-5">Meta</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for log in audit_logs %}
-                <tr class="border-t border-white/10">
-                    <td class="p-5 font-bold">{{ log.get_action_display }}</td>
-                    <td class="p-5">{{ log.content_type.model }}</td>
-                    <td class="p-5 font-mono">{{ log.object_id }}</td>
-                    <td class="p-5 text-slate-300">{{ log.created_at|date:"M d, Y H:i" }}</td>
-                    <td class="p-5 text-slate-400 text-sm">{{ log.metadata }}</td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="5" class="p-5 text-slate-400">No audit events yet.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+
+    <!-- Filters -->
+    <div class="glass-card rounded-[2rem] p-6 animate-in stagger-1">
+        <form method="get" class="flex flex-wrap items-end gap-4">
+            <div class="space-y-1.5">
+                <label class="text-2xs uppercase tracking-[0.2em] font-bold text-slate-500">Action</label>
+                <select name="action" class="bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-mint transition-all min-w-[140px]">
+                    <option value="">All actions</option>
+                    <option value="create" {% if request.GET.action == "create" %}selected{% endif %}>Create</option>
+                    <option value="update" {% if request.GET.action == "update" %}selected{% endif %}>Update</option>
+                    <option value="delete" {% if request.GET.action == "delete" %}selected{% endif %}>Delete</option>
+                </select>
+            </div>
+            <div class="space-y-1.5">
+                <label class="text-2xs uppercase tracking-[0.2em] font-bold text-slate-500">Target Type</label>
+                <input type="text" name="target_type" value="{{ request.GET.target_type }}" placeholder="e.g. Post, Project" class="bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-mint transition-all min-w-[160px]">
+            </div>
+            <button class="px-6 py-3 rounded-xl bg-mint text-black font-bold text-sm hover:scale-105 transition-all">Apply Filters</button>
+        </form>
     </div>
-    <div class="glass-card rounded-[2rem] overflow-hidden mt-8">
-        <div class="p-5 border-b border-white/10">
-            <h2 class="text-2xl font-black">Export Jobs</h2>
+
+    <!-- Tabbed Content -->
+    <div x-data="{ tab: 'events' }" class="animate-in stagger-2">
+        <!-- Tabs -->
+        <div class="flex items-center gap-1 bg-white/5 rounded-2xl p-1 w-fit mb-6">
+            <button @click="tab = 'events'" :class="tab === 'events' ? 'bg-ink text-mint' : 'text-slate-400 hover:text-white'" class="px-5 py-2.5 rounded-xl text-sm font-bold transition-all">Events</button>
+            <button @click="tab = 'exports'" :class="tab === 'exports' ? 'bg-ink text-mint' : 'text-slate-400 hover:text-white'" class="px-5 py-2.5 rounded-xl text-sm font-bold transition-all">Export Jobs</button>
         </div>
-        <table class="w-full text-left">
-            <thead class="text-xs uppercase text-slate-400 bg-white/5">
-                <tr>
-                    <th class="p-5">Job</th>
-                    <th class="p-5">Status</th>
-                    <th class="p-5">Created</th>
-                    <th class="p-5">Result</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for job in audit_export_jobs %}
-                <tr class="border-t border-white/10">
-                    <td class="p-5">{{ job.get_job_type_display }}</td>
-                    <td class="p-5">{{ job.get_status_display }}</td>
-                    <td class="p-5 text-slate-300">{{ job.created_at|date:"M d, Y H:i" }}</td>
-                    <td class="p-5">
-                        {% if job.status == "succeeded" %}
-                        <a href="/api/v1/devhub/jobs/{{ job.id }}/download/" class="text-mint font-bold">Download</a>
-                        {% elif job.status == "failed" %}
-                        <span class="text-red-300">{{ job.error_message }}</span>
-                        {% else %}
-                        <span class="text-slate-400">Pending</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="4" class="p-5 text-slate-400">No export jobs yet.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+
+        <!-- Events Tab -->
+        <div x-show="tab === 'events'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+            <div class="glass-card rounded-[2rem] overflow-hidden">
+                <table class="table-modern">
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>Target</th>
+                            <th>Target ID</th>
+                            <th>When</th>
+                            <th>Meta</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in audit_logs %}
+                        <tr>
+                            <td>
+                                <span class="badge 
+                                    {% if log.action == 'create' %}badge-mint
+                                    {% elif log.action == 'update' %}badge-blue
+                                    {% elif log.action == 'delete' %}badge-coral
+                                    {% else %}badge-amber{% endif %}">
+                                    {{ log.get_action_display }}
+                                </span>
+                            </td>
+                            <td class="font-medium">{{ log.content_type.model|title }}</td>
+                            <td><code class="text-xs font-mono bg-white/5 px-2 py-1 rounded">{{ log.object_id }}</code></td>
+                            <td class="text-slate-400 text-sm">{{ log.created_at|date:"M d, Y" }}<br><span class="text-2xs">{{ log.created_at|date:"H:i" }}</span></td>
+                            <td class="text-slate-500 text-sm max-w-[200px] truncate">{{ log.metadata }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="text-center py-10 text-slate-500">No audit events yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Exports Tab -->
+        <div x-show="tab === 'exports'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+            <div class="glass-card rounded-[2rem] overflow-hidden">
+                <table class="table-modern">
+                    <thead>
+                        <tr>
+                            <th>Job</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Result</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for job in audit_export_jobs %}
+                        <tr>
+                            <td class="font-medium">{{ job.get_job_type_display }}</td>
+                            <td>
+                                <span class="badge 
+                                    {% if job.status == 'succeeded' %}badge-mint
+                                    {% elif job.status == 'failed' %}badge-coral
+                                    {% elif job.status == 'pending' %}badge-amber
+                                    {% else %}badge-blue{% endif %}">
+                                    {{ job.get_status_display }}
+                                </span>
+                            </td>
+                            <td class="text-slate-400 text-sm">{{ job.created_at|date:"M d, Y H:i" }}</td>
+                            <td>
+                                {% if job.status == "succeeded" %}
+                                <a href="{% url 'api-job-download' job.id %}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-mint/10 text-mint text-sm font-bold hover:bg-mint/20 transition-all">
+                                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                                    Download
+                                </a>
+                                {% elif job.status == "failed" %}
+                                <span class="text-red-300 text-sm">{{ job.error_message }}</span>
+                                {% else %}
+                                <span class="flex items-center gap-2 text-slate-400 text-sm">
+                                    <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse-soft"></span>
+                                    Processing
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="text-center py-10 text-slate-500">No export jobs yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </main>
 {% endblock %}

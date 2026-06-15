@@ -1,35 +1,90 @@
 {% extends "devhub_app/base.html" %}
 {% block title %}{{ project.title }} | DevHub{% endblock %}
 {% block body %}
-<main class="max-w-5xl mx-auto px-6 py-10">
-    <a href="{% url 'devhub_app:dashboard' %}" class="inline-flex items-center gap-2 text-slate-300 mb-8"><i data-lucide="arrow-left" class="w-4 h-4"></i> Back to dashboard</a>
-    <section class="glass-card rounded-[2rem] p-8">
-        <div class="flex flex-wrap items-start justify-between gap-5 mb-8">
-            <div>
-                <p class="uppercase tracking-[0.3em] text-xs text-mint mb-3">Project</p>
-                <h1 class="text-4xl font-black mb-3">{{ project.title }}</h1>
-                <p class="text-slate-300 max-w-3xl">{{ project.summary }}</p>
-            </div>
-            <div class="flex gap-3">
-                <a href="{% url 'devhub_app:project-edit' project.pk %}" class="px-4 py-3 rounded-2xl bg-white/10">Edit</a>
-                <a href="{% url 'devhub_app:project-delete' project.pk %}" class="px-4 py-3 rounded-2xl bg-red-500/15 text-red-200">Delete</a>
-            </div>
+<main class="max-w-6xl mx-auto px-4 md:px-8 py-8">
+    <a href="{% url 'devhub_app:dashboard' %}" class="inline-flex items-center gap-2 text-slate-400 hover:text-mint transition-colors mb-8 group">
+        <i data-lucide="arrow-left" class="w-4 h-4 group-hover:-translate-x-1 transition-transform"></i>
+        Back to Workspace
+    </a>
+
+    <div class="grid lg:grid-cols-[1fr_320px] gap-8">
+        <!-- Main Content -->
+        <div class="space-y-6">
+            <!-- Project Header -->
+            <section class="glass-card rounded-[2.5rem] p-8 md:p-10">
+                <div class="flex items-start justify-between gap-6 mb-8">
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3">
+                            <span class="badge badge-mint">Project</span>
+                            <span class="text-2xs text-slate-500 font-bold uppercase tracking-widest">Created {{ project.created_at|date:"M d, Y" }}</span>
+                        </div>
+                        <h1 class="text-4xl font-black tracking-tight">{{ project.title }}</h1>
+                        <p class="text-slate-300 text-lg">{{ project.summary }}</p>
+                    </div>
+                    <div class="flex gap-3 flex-shrink-0">
+                        <a href="{% url 'devhub_app:project-edit' project.pk %}" class="px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 text-sm font-bold transition-all">Edit</a>
+                        <a href="{% url 'devhub_app:project-delete' project.pk %}" class="px-4 py-3 rounded-2xl bg-red-500/15 text-red-200 hover:bg-red-500/25 text-sm font-bold transition-all">Delete</a>
+                    </div>
+                </div>
+
+                <!-- Technology Stack -->
+                <div class="flex flex-wrap gap-2 mb-8">
+                    {% for tech in project.technology_names %}
+                    <span class="badge badge-mint">{{ tech }}</span>
+                    {% empty %}
+                    <span class="text-slate-500 text-sm">No technologies listed</span>
+                    {% endfor %}
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <h2 class="text-xl font-black mb-4 flex items-center gap-2">
+                        <i data-lucide="align-left" class="w-5 h-5 text-mint"></i>
+                        Description
+                    </h2>
+                    <div class="prose-custom">
+                        <p>{{ project.description }}</p>
+                    </div>
+                </div>
+            </section>
         </div>
-        <div class="flex flex-wrap gap-2 mb-8">
-            {% for tech in project.technology_names %}
-            <span class="px-3 py-2 rounded-full text-xs bg-mint/10 text-mint">{{ tech }}</span>
-            {% endfor %}
-        </div>
-        <div class="grid lg:grid-cols-[1.2fr_.8fr] gap-8">
-            <div>
-                <h2 class="text-xl font-black mb-4">Description</h2>
-                <p class="text-slate-200 leading-8">{{ project.description }}</p>
+
+        <!-- Sidebar -->
+        <aside class="space-y-6">
+            <!-- Links -->
+            <div class="glass-card rounded-[2rem] p-6 space-y-4">
+                <h3 class="text-2xs uppercase tracking-[0.2em] font-black text-slate-500">Quick Links</h3>
+                <a href="{{ project.demo_url|default:'#' }}" class="flex items-center justify-center gap-2 px-5 py-4 rounded-2xl bg-mint text-black font-black transition-all hover:scale-[1.02] active:scale-95">
+                    <i data-lucide="external-link" class="w-5 h-5"></i>
+                    Live Demo
+                </a>
+                <a href="{{ project.source_url|default:'#' }}" class="flex items-center justify-center gap-2 px-5 py-4 rounded-2xl bg-white/10 hover:bg-white/15 font-bold transition-all">
+                    <i data-lucide="github" class="w-5 h-5"></i>
+                    Source Code
+                </a>
             </div>
-            <div class="space-y-4">
-                <a href="{{ project.demo_url|default:'#' }}" class="block text-center px-5 py-4 rounded-2xl bg-mint text-black font-black">Live Demo</a>
-                <a href="{{ project.source_url|default:'#' }}" class="block text-center px-5 py-4 rounded-2xl bg-white/10">Source Code</a>
+
+            <!-- Project Stats -->
+            <div class="glass-card rounded-[2rem] p-6">
+                <h3 class="text-2xs uppercase tracking-[0.2em] font-black text-slate-500 mb-4">Stats</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-slate-400">Status</span>
+                        <span class="badge badge-mint">Active</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-slate-400">Created</span>
+                        <span class="text-sm font-bold">{{ project.created_at|date:"M d, Y" }}</span>
+                    </div>
+                    {% if project.updated_at %}
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-slate-400">Updated</span>
+                        <span class="text-sm font-bold">{{ project.updated_at|date:"M d, Y" }}</span>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
-        </div>
-    </section>
+        </aside>
+    </div>
 </main>
 {% endblock %}
