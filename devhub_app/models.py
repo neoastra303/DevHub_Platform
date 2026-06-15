@@ -33,6 +33,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 
 # ... (Previous imports)
 
+
 class Skill(models.Model):
     name = models.CharField(max_length=80, unique=True)
     slug = models.SlugField(max_length=90, unique=True)
@@ -75,7 +76,6 @@ class SkillProficiency(models.Model):
 
     def __str__(self):
         return f"{self.profile.user.username} - {self.skill.name}: {self.level}"
-
 
 
 class Profile(TimestampedModel):
@@ -174,6 +174,21 @@ class PostMetric(models.Model):
         return f"Metrics for {self.post.title}"
 
 
+class PostLike(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="post_likes")
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="likes")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "post"], name="unique_post_like"),
+        ]
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.user.username} liked {self.post.title}"
+
+
 class ViewEvent(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="view_events")
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
@@ -181,7 +196,6 @@ class ViewEvent(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
-
 
 
 class TransactionLog(TimestampedModel):
@@ -216,12 +230,12 @@ class AuditLog(TimestampedModel):
         related_name="audit_logs",
     )
     action = models.CharField(max_length=20, choices=Action.choices)
-    
+
     # Generic relationship
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.CharField(max_length=64)
     content_object = GenericForeignKey("content_type", "object_id")
-    
+
     metadata = models.JSONField(default=dict, blank=True)
 
     class Meta:
@@ -272,44 +286,12 @@ class Comment(TimestampedModel):
         return f"Comment by {self.author.username} on {self.post or self.project}"
 
 
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
-
-
 class Notification(TimestampedModel):
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications")
     title = models.CharField(max_length=100)
     message = models.TextField()
     is_read = models.BooleanField(default=False)
     link = models.CharField(max_length=255, blank=True)
-
-    def save(self, *args, **kwargs):
-        is_new = self.pk is None
-        super().save(*args, **kwargs)
-        if is_new:
-            try:
-                self.send_to_websocket()
-            except Exception:
-                # Fallback if channel layer is not configured or fails
-                pass
-
-    def send_to_websocket(self):
-        channel_layer = get_channel_layer()
-        if not channel_layer:
-            return
-        group_name = f"user_{self.recipient.id}_notifications"
-        async_to_sync(channel_layer.group_send)(
-            group_name,
-            {
-                "type": "send_notification",
-                "content": {
-                    "id": self.id,
-                    "title": self.title,
-                    "message": self.message,
-                    "created_at": self.created_at.isoformat() if self.created_at else "",
-                },
-            },
-        )
 
     class Meta:
         ordering = ["-created_at"]

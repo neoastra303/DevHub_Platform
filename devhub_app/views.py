@@ -27,7 +27,7 @@ from .filters import PostFilter, ProjectFilter
 from .forms import PostForm, ProfileForm, ProjectForm, SignUpForm, TransactionLogForm
 from .jobs import enqueue_audit_export_job
 from .mixins import QueryValidationMixin
-from .models import AuditLog, BackgroundJob, Post, Project, TransactionLog, Comment, Notification
+from .models import AuditLog, BackgroundJob, Post, PostLike, PostMetric, Project, TransactionLog, Comment, Notification
 from .permissions import IsOwnerObjectPermission
 from .serializers import (
     AuditLogSerializer,
@@ -101,6 +101,7 @@ def health_check(request):
     """
     try:
         from django.db import connections
+
         conn = connections["default"]
         conn.cursor()
     except Exception as e:
@@ -157,7 +158,9 @@ def profile_page(request):
 @login_required
 def project_detail_page(request, slug):
     context = _shared_page_context(request)
-    context["project"] = get_object_or_404(Project.objects.prefetch_related("technologies"), owner=request.user, slug=slug)
+    context["project"] = get_object_or_404(
+        Project.objects.prefetch_related("technologies"), owner=request.user, slug=slug
+    )
     return render(request, "devhub_app/project_detail.html", context)
 
 
@@ -242,9 +245,10 @@ class DevHubPasswordResetCompleteView(PasswordResetCompleteView):
 @login_required
 def post_like_htmx(request, pk):
     post = get_object_or_404(Post, pk=pk)
-    # Simple like logic: just increment (in a real app you'd track who liked what)
-    post.metrics.likes += 1
-    post.metrics.save(update_fields=["likes", "updated_at"])
+    like, created = PostLike.objects.get_or_create(user=request.user, post=post)
+    if created:
+        post.metrics.likes += 1
+        post.metrics.save(update_fields=["likes", "updated_at"])
     return render(
         request,
         "devhub_app/partials/post_likes.html",
@@ -264,29 +268,31 @@ def analytics_summary(request):
     """
     user = request.user
     posts = Post.objects.filter(author=user)
-    
+
     # Mocking time-series data based on actual post views for visualization
     # In a real app, this would query a dedicated Analytics/Metric model
     labels = []
     data = []
     now = timezone.now()
-    
+
     for i in range(7, -1, -1):
         day = now - timedelta(days=i)
         labels.append(day.strftime("%b %d"))
         # Deterministic pseudo-random data based on total post views
-        total_views = posts.aggregate(total=Sum("views"))["total"] or 0
+        total_views = posts.aggregate(total=Sum("metrics__views"))["total"] or 0
         data.append(int((total_views / 10) * (1 + (i % 3) * 0.2)))
 
-    return Response({
-        "labels": labels,
-        "datasets": [
-            {
-                "label": "Views",
-                "data": data,
-            }
-        ]
-    })
+    return Response(
+        {
+            "labels": labels,
+            "datasets": [
+                {
+                    "label": "Views",
+                    "data": data,
+                }
+            ],
+        }
+    )
 
 
 @api_view(["GET"])
@@ -298,12 +304,12 @@ def profile_skills_analytics(request):
     user = request.user
     profile = user.profile
     skills = profile.skill_names
-    
+
     # Base skills from profile get a value of 80
     # Technologies from projects add 5 points each
     data = []
     labels = skills[:6]  # Limit to 6 for best radar look
-    
+
     for skill in labels:
         score = 60
         # Check how many projects use this skill (case insensitive)
@@ -311,10 +317,7 @@ def profile_skills_analytics(request):
         score += min(count * 10, 40)
         data.append(score)
 
-    return Response({
-        "labels": labels,
-        "data": data
-    })
+    return Response({"labels": labels, "data": data})
 
 
 class OwnerQuerySetMixin(LoginRequiredMixin):
@@ -332,6 +335,7 @@ class PostCreateView(LoginRequiredMixin, CreateView):
         post = form.save(commit=False)
         post.author = self.request.user
         post.save()
+        PostMetric.objects.get_or_create(post=post)
         record_audit_event(actor=self.request.user, action=AuditLog.Action.CREATE, target=post)
         messages.success(self.request, "Post created.")
         return redirect(self.success_url)
@@ -432,7 +436,16 @@ class PostViewSet(QueryValidationMixin, viewsets.ModelViewSet):
         ordering = self.request.query_params.get("ordering")
         if query:
             queryset = queryset.filter(Q(title__icontains=query) | Q(content__icontains=query))
-        allowed_ordering = {"created_at", "-created_at", "views", "-views", "likes_count", "-likes_count", "title", "-title"}
+        allowed_ordering = {
+            "created_at",
+            "-created_at",
+            "metrics__views",
+            "-metrics__views",
+            "metrics__likes",
+            "-metrics__likes",
+            "title",
+            "-title",
+        }
         self.validate_choice_param("ordering", ordering, allowed_ordering)
         if ordering in allowed_ordering:
             queryset = queryset.order_by(ordering)
@@ -455,14 +468,20 @@ class PostViewSet(QueryValidationMixin, viewsets.ModelViewSet):
         except Exception as e:
             # log or handle error
             pass
-        record_audit_event(actor=self.request.user, action=AuditLog.Action.CREATE, target=post, metadata={"source": "api"})
+        record_audit_event(
+            actor=self.request.user, action=AuditLog.Action.CREATE, target=post, metadata={"source": "api"}
+        )
 
     def perform_update(self, serializer):
         post = serializer.save()
-        record_audit_event(actor=self.request.user, action=AuditLog.Action.UPDATE, target=post, metadata={"source": "api"})
+        record_audit_event(
+            actor=self.request.user, action=AuditLog.Action.UPDATE, target=post, metadata={"source": "api"}
+        )
 
     def perform_destroy(self, instance):
-        record_audit_event(actor=self.request.user, action=AuditLog.Action.DELETE, target=instance, metadata={"source": "api"})
+        record_audit_event(
+            actor=self.request.user, action=AuditLog.Action.DELETE, target=instance, metadata={"source": "api"}
+        )
         instance.delete()
 
 
@@ -478,7 +497,9 @@ class ProjectViewSet(QueryValidationMixin, viewsets.ModelViewSet):
         featured = self.request.query_params.get("featured")
         ordering = self.request.query_params.get("ordering")
         if query:
-            queryset = queryset.filter(Q(title__icontains=query) | Q(summary__icontains=query) | Q(description__icontains=query))
+            queryset = queryset.filter(
+                Q(title__icontains=query) | Q(summary__icontains=query) | Q(description__icontains=query)
+            )
         if technology:
             queryset = queryset.filter(technologies__slug=technology)
         self.validate_choice_param("featured", featured, {"true", "false"}, "Use 'true' or 'false'.")
@@ -502,14 +523,20 @@ class ProjectViewSet(QueryValidationMixin, viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         project = serializer.save(owner=self.request.user)
-        record_audit_event(actor=self.request.user, action=AuditLog.Action.CREATE, target=project, metadata={"source": "api"})
+        record_audit_event(
+            actor=self.request.user, action=AuditLog.Action.CREATE, target=project, metadata={"source": "api"}
+        )
 
     def perform_update(self, serializer):
         project = serializer.save()
-        record_audit_event(actor=self.request.user, action=AuditLog.Action.UPDATE, target=project, metadata={"source": "api"})
+        record_audit_event(
+            actor=self.request.user, action=AuditLog.Action.UPDATE, target=project, metadata={"source": "api"}
+        )
 
     def perform_destroy(self, instance):
-        record_audit_event(actor=self.request.user, action=AuditLog.Action.DELETE, target=instance, metadata={"source": "api"})
+        record_audit_event(
+            actor=self.request.user, action=AuditLog.Action.DELETE, target=instance, metadata={"source": "api"}
+        )
         instance.delete()
 
 

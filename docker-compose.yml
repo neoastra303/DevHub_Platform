@@ -6,7 +6,7 @@ services:
     environment:
       - POSTGRES_DB=devhub
       - POSTGRES_USER=devhub_user
-      - POSTGRES_PASSWORD=devhub_pass
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-devhub_pass}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U devhub_user -d devhub"]
       interval: 10s
@@ -20,11 +20,10 @@ services:
       - .:/app
     ports:
       - "8000:8000"
+    env_file:
+      - .env
     environment:
-      - DJANGO_DEBUG=True
-      - DJANGO_SECRET_KEY=docker-secret-key-123
-      - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
-      - DJANGO_DB_URL=postgres://devhub_user:devhub_pass@db:5432/devhub
+      - DJANGO_DB_URL=postgres://devhub_user:${POSTGRES_PASSWORD:-devhub_pass}@db:5432/devhub
     depends_on:
       db:
         condition: service_healthy
@@ -39,11 +38,10 @@ services:
     command: celery -A core worker -l info
     volumes:
       - .:/app
+    env_file:
+      - .env
     environment:
-      - DJANGO_DEBUG=True
-      - DJANGO_SECRET_KEY=docker-secret-key-123
-      - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
-      - DJANGO_DB_URL=postgres://devhub_user:devhub_pass@db:5432/devhub
+      - DJANGO_DB_URL=postgres://devhub_user:${POSTGRES_PASSWORD:-devhub_pass}@db:5432/devhub
       - CELERY_BROKER_URL=redis://redis:6379/0
     depends_on:
       - db

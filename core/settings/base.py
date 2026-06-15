@@ -7,7 +7,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 env = environ.Env(
     DJANGO_DEBUG=(bool, False),
-    DJANGO_SECRET_KEY=(str, "fallback-secret-key-for-dev"),
     DJANGO_ALLOWED_HOSTS=(list, ["127.0.0.1", "localhost"]),
 )
 
@@ -98,7 +97,9 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-CORS_ALLOWED_ORIGINS = env.list("DJANGO_CORS_ALLOWED_ORIGINS", default=["http://127.0.0.1:8000", "http://localhost:8000"])
+CORS_ALLOWED_ORIGINS = env.list(
+    "DJANGO_CORS_ALLOWED_ORIGINS", default=["http://127.0.0.1:8000", "http://localhost:8000"]
+)
 
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "devhub_app:dashboard"
