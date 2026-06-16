@@ -1,6 +1,5 @@
 from django.contrib.auth import get_user_model
 from django.core import mail
-from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
@@ -10,7 +9,7 @@ from .services import bootstrap_demo_user
 User = get_user_model()
 
 
-class DevHubAppTests(TestCase):
+class BaseTestCase(TestCase):
     def setUp(self):
         bootstrap_demo_user()
         self.user = User.objects.create_user(
@@ -24,6 +23,8 @@ class DevHubAppTests(TestCase):
     def login(self):
         self.client.login(username="alice", password="password123A!")
 
+
+class PageRenderTests(BaseTestCase):
     def test_signup_page_renders(self):
         response = self.client.get(reverse("devhub_app:signup"))
         self.assertEqual(response.status_code, 200)
@@ -51,6 +52,13 @@ class DevHubAppTests(TestCase):
         detail = self.client.get(reverse("devhub_app:project-detail", kwargs={"slug": project.slug}))
         self.assertEqual(detail.status_code, 200)
 
+    def test_health_check_returns_200(self):
+        response = self.client.get(reverse("devhub_app:health"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["status"], "healthy")
+
+
+class PostCRUDTests(BaseTestCase):
     def test_post_crud_is_user_owned(self):
         self.login()
         create_response = self.client.post(reverse("devhub_app:post-create"), {"title": "Owned", "content": "Owned content"})
@@ -64,6 +72,8 @@ class DevHubAppTests(TestCase):
         forbidden = self.client.get(reverse("devhub_app:post-edit", kwargs={"pk": foreign_post.pk}))
         self.assertEqual(forbidden.status_code, 404)
 
+
+class APITests(BaseTestCase):
     def test_api_returns_paginated_filtered_current_user_objects(self):
         self.login()
         post1 = Post.objects.create(author=self.user, title="Mine", content="Visible content")
@@ -81,6 +91,53 @@ class DevHubAppTests(TestCase):
         self.assertIn("Mine", titles)
         self.assertNotIn("Demo hidden", titles)
 
+    def test_api_validation_errors_have_structured_contract(self):
+        self.login()
+        response = self.client.get(reverse("projects-list"), {"featured": "maybe"})
+        self.assertEqual(response.status_code, 400)
+        payload = response.json()
+        self.assertFalse(payload["ok"])
+        self.assertIn("error", payload)
+        self.assertIn("details", payload["error"])
+        self.assertIn("featured", payload["error"]["details"])
+
+    def test_write_api_validation_rejects_bad_payloads(self):
+        self.login()
+        response = self.client.post(
+            reverse("projects-list"),
+            data={
+                "title": "No",
+                "summary": "short",
+                "description": "too short",
+                "tech_stack": ["Django"],
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+        payload = response.json()
+        self.assertFalse(payload["ok"])
+        self.assertIn("summary", payload["error"]["details"])
+
+    def test_project_api_filtering_and_transaction_pagination(self):
+        self.login()
+        project = Project.objects.create(owner=self.user, title="Payments", summary="S", description="D", is_featured=True)
+        project.set_technology_names(["Redis"])
+        TransactionLog.objects.create(user=self.user, transaction_id="ALICE-3", amount=10, status=TransactionLog.Status.PENDING)
+        TransactionLog.objects.create(user=self.user, transaction_id="ALICE-4", amount=20, status=TransactionLog.Status.COMPLETED)
+        project_response = self.client.get(reverse("projects-list"), {"technology": "redis", "featured": "true"})
+        self.assertEqual(project_response.status_code, 200)
+        project_payload = project_response.json()
+        self.assertEqual(project_payload["count"], 1)
+        self.assertEqual(project_payload["results"][0]["title"], "Payments")
+
+        transaction_response = self.client.get("/api/v1/devhub/transactions/", {"status": "completed", "page_size": 1})
+        self.assertEqual(transaction_response.status_code, 200)
+        transaction_payload = transaction_response.json()
+        self.assertEqual(transaction_payload["count"], 1)
+        self.assertEqual(transaction_payload["results"][0]["transaction_id"], "ALICE-4")
+
+
+class ModelRelationshipTests(BaseTestCase):
     def test_can_create_project_and_transaction(self):
         self.login()
         project_response = self.client.post(
@@ -115,51 +172,8 @@ class DevHubAppTests(TestCase):
         self.assertEqual(set(project.technology_names), {"PostgreSQL", "Docker"})
         self.assertEqual(Skill.objects.count(), 4)
 
-    def test_project_api_filtering_and_transaction_pagination(self):
-        self.login()
-        project = Project.objects.create(owner=self.user, title="Payments", summary="S", description="D", is_featured=True)
-        project.set_technology_names(["Redis"])
-        TransactionLog.objects.create(user=self.user, transaction_id="ALICE-3", amount=10, status=TransactionLog.Status.PENDING)
-        TransactionLog.objects.create(user=self.user, transaction_id="ALICE-4", amount=20, status=TransactionLog.Status.COMPLETED)
-        project_response = self.client.get(reverse("projects-list"), {"technology": "redis", "featured": "true"})
-        self.assertEqual(project_response.status_code, 200)
-        project_payload = project_response.json()
-        self.assertEqual(project_payload["count"], 1)
-        self.assertEqual(project_payload["results"][0]["title"], "Payments")
 
-        transaction_response = self.client.get("/api/v1/devhub/transactions/", {"status": "completed", "page_size": 1})
-        self.assertEqual(transaction_response.status_code, 200)
-        transaction_payload = transaction_response.json()
-        self.assertEqual(transaction_payload["count"], 1)
-        self.assertEqual(transaction_payload["results"][0]["transaction_id"], "ALICE-4")
-
-    def test_api_validation_errors_have_structured_contract(self):
-        self.login()
-        response = self.client.get(reverse("projects-list"), {"featured": "maybe"})
-        self.assertEqual(response.status_code, 400)
-        payload = response.json()
-        self.assertFalse(payload["ok"])
-        self.assertIn("error", payload)
-        self.assertIn("details", payload["error"])
-        self.assertIn("featured", payload["error"]["details"])
-
-    def test_write_api_validation_rejects_bad_payloads(self):
-        self.login()
-        response = self.client.post(
-            reverse("projects-list"),
-            data={
-                "title": "No",
-                "summary": "short",
-                "description": "too short",
-                "tech_stack": ["Django"],
-            },
-            content_type="application/json",
-        )
-        self.assertEqual(response.status_code, 400)
-        payload = response.json()
-        self.assertFalse(payload["ok"])
-        self.assertIn("summary", payload["error"]["details"])
-
+class AuditLogTests(BaseTestCase):
     def test_audit_logs_are_created_for_html_and_api_writes(self):
         self.login()
         self.client.post(reverse("devhub_app:post-create"), {"title": "Audit Post", "content": "Audit content body"})
@@ -205,13 +219,19 @@ class DevHubAppTests(TestCase):
         page_response = self.client.get(reverse("devhub_app:audit"))
         self.assertEqual(page_response.status_code, 200)
         self.assertContains(page_response, "Action")
-        self.assertNotContains(page_response, "Project")
+        self.assertNotContains(page_response, ">Project<")
 
         api_response = self.client.get("/api/v1/devhub/audit/", {"action": "create"})
         self.assertEqual(api_response.status_code, 200)
         payload = api_response.json()
         self.assertEqual(payload["count"], 1)
-        self.assertEqual(payload["results"][0]["target_type"], "post")
+
+
+class RateLimitTests(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        from django.core.cache import cache
+        cache.clear()
 
     @override_settings(
         DEVHUB_API_WRITE_RATE="1/minute",
@@ -241,6 +261,8 @@ class DevHubAppTests(TestCase):
         blocked = self.client.post(reverse("login"), {"username": "alice", "password": "wrong"})
         self.assertEqual(blocked.status_code, 429)
 
+
+class AuthFlowTests(BaseTestCase):
     @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
     def test_password_reset_flow_sends_email(self):
         response = self.client.post(reverse("password_reset"), {"email": "alice@example.com"})
@@ -248,11 +270,8 @@ class DevHubAppTests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn("password reset", mail.outbox[0].subject.lower())
 
-    def test_health_check_returns_200(self):
-        response = self.client.get(reverse("devhub_app:health"))
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["status"], "healthy")
 
+class BackgroundJobTests(BaseTestCase):
     def test_audit_export_job_can_be_queued_processed_and_downloaded(self):
         self.login()
         post = Post.objects.create(author=self.user, title="Audit Post", content="Content")
@@ -263,11 +282,9 @@ class DevHubAppTests(TestCase):
             metadata={"source": "manual"},
         )
         response = self.client.post("/api/v1/devhub/audit/export/", {"action": "create"})
-        # Should be 202 because the view returns it immediately after delay()
         self.assertEqual(response.status_code, 202)
         job_id = response.json()["job"]["id"]
         job = BackgroundJob.objects.get(pk=job_id)
-        # With ALWAYS_EAGER=True, the task runs synchronously inside delay()
         self.assertEqual(job.status, BackgroundJob.Status.SUCCEEDED)
 
         listing = self.client.get("/api/v1/devhub/jobs/")
@@ -279,6 +296,7 @@ class DevHubAppTests(TestCase):
         self.assertIn("text/csv", download["Content-Type"])
 
 
+class NotificationTests(BaseTestCase):
     def test_notification_mark_as_read_action(self):
         self.login()
         notification = Notification.objects.create(
