@@ -1,60 +1,98 @@
-// ─── Count-Up Animation ───
+// ─── Debounce Helper ───
+function debounce(fn, delay = 150) {
+    let timer;
+    return (...args) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn(...args), delay);
+    };
+}
+
+// ─── Count-Up Animation (IntersectionObserver) ───
 document.addEventListener("DOMContentLoaded", () => {
-    document.querySelectorAll("[data-count-up]").forEach(el => {
-        const target = parseInt(el.dataset.countUp, 10);
-        if (isNaN(target)) return;
-        const duration = parseInt(el.dataset.duration, 10) || 800;
-        const start = performance.now();
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const els = document.querySelectorAll("[data-count-up]");
+    if (prefersReduced) {
+        els.forEach(el => {
+            const target = parseInt(el.dataset.countUp, 10);
+            if (isNaN(target)) return;
+            const format = (n) => {
+                if (el.dataset.format === "currency") return "$" + n.toLocaleString();
+                if (el.dataset.format === "percent") return n + "%";
+                return n.toLocaleString();
+            };
+            el.textContent = format(target);
+        });
+        return;
+    }
 
-        const format = (n) => {
-            if (el.dataset.format === "currency") return "$" + n.toLocaleString();
-            if (el.dataset.format === "percent") return n + "%";
-            return n.toLocaleString();
-        };
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            const el = entry.target;
+            const target = parseInt(el.dataset.countUp, 10);
+            if (isNaN(target)) return;
+            const duration = parseInt(el.dataset.duration, 10) || 800;
+            const start = performance.now();
 
-        const tick = (now) => {
-            const progress = Math.min((now - start) / duration, 1);
-            const eased = 1 - Math.pow(1 - progress, 3);
-            const current = Math.round(eased * target);
-            el.textContent = format(current);
-            if (progress < 1) requestAnimationFrame(tick);
-            else el.textContent = format(target);
-        };
-        requestAnimationFrame(tick);
-    });
+            const format = (n) => {
+                if (el.dataset.format === "currency") return "$" + n.toLocaleString();
+                if (el.dataset.format === "percent") return n + "%";
+                return n.toLocaleString();
+            };
+
+            const tick = (now) => {
+                const progress = Math.min((now - start) / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                const current = Math.round(eased * target);
+                el.textContent = format(current);
+                if (progress < 1) requestAnimationFrame(tick);
+                else el.textContent = format(target);
+            };
+            requestAnimationFrame(tick);
+            observer.unobserve(el);
+        });
+    }, { threshold: 0.3 });
+
+    els.forEach(el => observer.observe(el));
 });
 
-// ─── Button Ripple Effect ───
-document.addEventListener("click", (e) => {
-    const btn = e.target.closest(".ripple-container");
-    if (!btn) return;
+// ─── Button Ripple Effect (Mouse + Keyboard) ───
+function createRipple(btn, x, y) {
     const rect = btn.getBoundingClientRect();
     const ripple = document.createElement("span");
     ripple.className = "ripple-effect";
     const size = Math.max(rect.width, rect.height);
     ripple.style.width = ripple.style.height = size + "px";
-    ripple.style.left = (e.clientX - rect.left - size / 2) + "px";
-    ripple.style.top = (e.clientY - rect.top - size / 2) + "px";
+    ripple.style.left = (x - rect.left - size / 2) + "px";
+    ripple.style.top = (y - rect.top - size / 2) + "px";
     btn.appendChild(ripple);
     ripple.addEventListener("animationend", () => ripple.remove());
+}
+
+document.addEventListener("click", (e) => {
+    const btn = e.target.closest(".ripple-container");
+    if (!btn) return;
+    createRipple(btn, e.clientX, e.clientY);
+});
+
+document.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    const btn = e.target.closest(".ripple-container");
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    createRipple(btn, rect.left + rect.width / 2, rect.top + rect.height / 2);
 });
 
 // ─── Page Transition (HTMX) ───
 document.addEventListener("htmx:beforeSwap", () => {
-    document.querySelector("#main-content")?.classList.add("opacity-0", "translate-y-4");
+    document.querySelector("#main-content")?.classList.add("page-exiting");
 });
-document.addEventListener("htmx:afterSwap", () => {
-    const main = document.querySelector("#main-content");
-    if (!main) return;
-    main.classList.remove("opacity-0", "translate-y-4");
-    main.classList.add("transition-all", "duration-500", "ease-out");
-    requestAnimationFrame(() => {
-        main.classList.remove("opacity-0", "translate-y-4");
-    });
+document.addEventListener("htmx:afterSettle", () => {
+    document.querySelector("#main-content")?.classList.remove("page-exiting");
 });
 
-// ─── Filter / Search Items ───
-window.filterItems = function(query, containerId) {
+// ─── Filter / Search Items (Debounced) ───
+window.filterItems = debounce(function(query, containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
     const items = container.querySelectorAll("[data-filter-item]");
@@ -63,7 +101,7 @@ window.filterItems = function(query, containerId) {
         const text = (item.dataset.filterText || item.textContent).toLowerCase();
         item.style.display = (!q || text.includes(q)) ? "" : "none";
     });
-};
+});
 
 // ─── Tooltip Toggle ───
 document.addEventListener("mouseenter", (e) => {
@@ -80,6 +118,7 @@ document.addEventListener("mouseenter", (e) => {
     tip.style.top = (rect.top - tip.offsetHeight - 8) + "px";
     el._tooltip = tip;
 }, true);
+
 document.addEventListener("mouseleave", (e) => {
     const el = e.target.closest("[data-tooltip]");
     if (el && el._tooltip) {

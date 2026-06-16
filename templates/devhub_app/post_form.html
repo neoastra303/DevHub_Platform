@@ -29,7 +29,7 @@
                         <span x-text="count"></span> chars (min 3)
                     </span>
                 </div>
-                <input type="text" name="title" value="{{ form.title.value|default:'' }}" @input="count = $el.value.length" class="w-full">
+                <input type="text" name="title" value="{{ form.title.value|default:'' }}" @input="count = $el.value.length" class="w-full" required>
                 {% if form.title.errors %}<p class="text-xs text-coral mt-1 font-bold">{{ form.title.errors.0 }}</p>{% endif %}
             </div>
 
@@ -40,7 +40,7 @@
                         <span x-text="count"></span> chars (min 10)
                     </span>
                 </div>
-                <textarea name="content" rows="10" @input="count = $el.value.length" class="w-full">{{ form.content.value|default:'' }}</textarea>
+                <textarea name="content" rows="10" @input="count = $el.value.length" class="w-full" required>{{ form.content.value|default:'' }}</textarea>
                 <p class="text-2xs text-slate-500 mt-2 ml-1">Markdown support for code blocks is fully enabled.</p>
                 {% if form.content.errors %}<p class="text-xs text-coral mt-1 font-bold">{{ form.content.errors.0 }}</p>{% endif %}
             </div>

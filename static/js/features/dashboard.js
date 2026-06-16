@@ -14,6 +14,8 @@ export async function initDashboardSummary() {
         return;
     }
 
+    root.querySelectorAll("[data-dashboard-metric]").forEach(el => el.classList.add("skeleton"));
+
     try {
         const payload = await apiFetch("/api/v1/devhub/dashboard-summary/");
         updateMetric("points", payload.points ?? 0);
@@ -22,6 +24,8 @@ export async function initDashboardSummary() {
         updateMetric("total_post_views", payload.total_post_views ?? 0);
     } catch (error) {
         window.console.error("Failed to hydrate dashboard summary.", error);
+    } finally {
+        root.querySelectorAll("[data-dashboard-metric]").forEach(el => el.classList.remove("skeleton"));
     }
 }
 

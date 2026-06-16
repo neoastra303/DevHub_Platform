@@ -12,10 +12,10 @@
     </label>
     {% endif %}
     
-    <div class="relative field-shell">
+    <div class="relative field-shell{% if field.errors %} error{% endif %}">
         {% if icon %}
         <div class="absolute left-4 top-[1.1rem] text-slate-500 group-focus-within:text-mint transition-colors">
-            <i data-lucide="{{ icon }}" class="w-4 h-4"></i>
+            <i data-lucide="{{ icon }}" class="w-4 h-4" aria-hidden="true"></i>
         </div>
         {% endif %}
         
@@ -24,7 +24,7 @@
         </div>
         
         {% if field.errors %}
-        <div class="mt-2 text-xs text-coral font-bold px-2">
+        <div class="mt-2 text-xs text-coral font-bold px-2" role="alert">
             {% for error in field.errors %}{{ error }}{% endfor %}
         </div>
         {% endif %}

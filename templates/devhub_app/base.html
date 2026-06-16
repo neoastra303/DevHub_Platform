@@ -11,15 +11,20 @@
     <meta name="theme-color" content="#08111b">
     <link rel="icon" type="image/svg+xml" href="https://api.dicebear.com/7.x/bottts/svg?seed=devhub">
     
+    <!-- Font: Inter with preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
     <!-- Core Assets -->
     <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
     <link rel="stylesheet" href="{% static 'css/app.css' %}">
-    <script defer src="https://unpkg.com/lucide@latest"></script>
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://unpkg.com/lucide@0.468.0"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.14.8/dist/cdn.min.js"></script>
     
-    <!-- Developer Tooling -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <!-- Developer Tooling: load Prism only if code blocks exist -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" media="print" onload="this.media='all'">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" defer></script>
     {% block head %}{% endblock %}
 </head>
 <body
@@ -28,73 +33,72 @@
     @open-command-palette.window="commandPaletteOpen = true"
     @close-command-palette.window="commandPaletteOpen = false"
 >
-    <!-- Accessibility -->
-    <a href="#main-content" class="sr-only focus:not-sr-only fixed top-4 left-4 z-[100] px-6 py-3 bg-mint text-ink font-bold rounded-xl shadow-2xl">
+    <!-- Skip to content -->
+    <a href="#main-content" class="sr-only focus:not-sr-only fixed top-4 left-4 z-[100] px-6 py-3 bg-mint text-ink font-bold rounded-xl shadow-2xl focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
         Skip to content
     </a>
 
     <!-- Animated Background Blobs -->
-    <div class="bg-blobs">
+    <div class="bg-blobs" aria-hidden="true">
         <div class="blob bg-mint top-[-10%] left-[-10%] animate-float"></div>
         <div class="blob bg-coral bottom-[-10%] right-[-10%] animate-float-delayed"></div>
     </div>
 
-    <!-- Desktop Sidebar (authenticated only) -->
+    <!-- Desktop Sidebar -->
     {% if user.is_authenticated %}
         {% include "devhub_app/components/sidebar.html" %}
     {% endif %}
 
-    <!-- Top Header (authenticated: slim, unauthenticated: full) -->
-    <header class="border-b border-white/5 backdrop-blur-md sticky top-0 z-40 bg-ink/80">
+    <!-- Top Header -->
+    <header class="border-b border-white/5 backdrop-blur-md sticky top-0 z-40 bg-ink/80" aria-label="Secondary navigation">
         <div class="{% if user.is_authenticated %}px-4 md:px-8{% else %}max-w-7xl mx-auto px-6{% endif %} py-3 flex items-center justify-between gap-4">
             <div class="flex items-center gap-4">
                 {% if user.is_authenticated %}
-                    <!-- Mobile hamburger -->
-                    <button @click="sidebarOpen = !sidebarOpen" class="md:hidden p-2 rounded-xl hover:bg-white/5 transition-colors">
-                        <i data-lucide="menu" class="w-5 h-5"></i>
+                    <button @click="sidebarOpen = !sidebarOpen" class="md:hidden p-2 rounded-xl hover:bg-white/5 transition-colors focus-visible:ring-2 focus-visible:ring-mint focus-visible:ring-offset-2 focus-visible:ring-offset-ink" aria-label="Toggle navigation menu">
+                        <i data-lucide="menu" class="w-5 h-5" aria-hidden="true"></i>
                     </button>
                 {% endif %}
                 
-                <a href="{% url 'devhub_app:landing' %}" class="text-xl font-black tracking-tighter flex items-center gap-2 md:hidden">
+                <a href="{% url 'devhub_app:landing' %}" class="text-xl font-black tracking-tighter flex items-center gap-2 md:hidden focus-visible:ring-2 focus-visible:ring-mint rounded-xl" aria-label="DevHub Home">
                     <div class="w-7 h-7 rounded-lg bg-mint flex items-center justify-center text-ink">
-                        <i data-lucide="terminal" class="w-4 h-4"></i>
+                        <i data-lucide="terminal" class="w-4 h-4" aria-hidden="true"></i>
                     </div>
                     DevHub
                 </a>
                 
                 {% if user.is_authenticated %}
-                <div class="hidden md:flex items-center gap-1 bg-white/5 rounded-full p-0.5 border border-white/5">
-                    <a href="{% url 'devhub_app:dashboard' %}" class="px-4 py-1.5 rounded-full text-sm font-medium hover:bg-white/10 transition-colors {% if request.resolver_match.url_name == 'dashboard' %}bg-white/10 text-mint{% endif %}">Dashboard</a>
-                    <a href="{% url 'devhub_app:feed' %}" class="px-4 py-1.5 rounded-full text-sm font-medium hover:bg-white/10 transition-colors {% if request.resolver_match.url_name == 'feed' %}bg-white/10 text-mint{% endif %}">Feed</a>
+                <div class="hidden md:flex items-center gap-1 bg-white/5 rounded-full p-0.5 border border-white/5" role="tablist" aria-label="Main tabs">
+                    <a href="{% url 'devhub_app:dashboard' %}" class="px-4 py-1.5 rounded-full text-sm font-medium hover:bg-white/10 transition-colors focus-visible:ring-2 focus-visible:ring-mint focus-visible:ring-offset-2 focus-visible:ring-offset-ink {% if request.resolver_match.url_name == 'dashboard' %}bg-white/10 text-mint{% endif %}" role="tab" aria-selected="{% if request.resolver_match.url_name == 'dashboard' %}true{% else %}false{% endif %}">Dashboard</a>
+                    <a href="{% url 'devhub_app:feed' %}" class="px-4 py-1.5 rounded-full text-sm font-medium hover:bg-white/10 transition-colors focus-visible:ring-2 focus-visible:ring-mint focus-visible:ring-offset-2 focus-visible:ring-offset-ink {% if request.resolver_match.url_name == 'feed' %}bg-white/10 text-mint{% endif %}" role="tab" aria-selected="{% if request.resolver_match.url_name == 'feed' %}true{% else %}false{% endif %}">Feed</a>
                 </div>
                 {% endif %}
             </div>
 
-            <nav class="flex items-center gap-3">
+            <div class="flex items-center gap-3">
                 {% if user.is_authenticated %}
-                <button @click="commandPaletteOpen = true" class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/5 text-slate-400 text-sm hover:bg-white/10 transition-all">
+                <button @click="commandPaletteOpen = true" class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/5 text-slate-400 text-sm hover:bg-white/10 transition-all focus-visible:ring-2 focus-visible:ring-mint focus-visible:ring-offset-2 focus-visible:ring-offset-ink" aria-haspopup="dialog" aria-label="Open search palette">
                     <span>Search...</span>
-                    <kbd class="px-1.5 py-0.5 rounded bg-white/10 text-[10px] font-bold">CTRL K</kbd>
+                    <kbd class="px-1.5 py-0.5 rounded bg-white/10 text-[10px] font-bold" aria-hidden="true">CTRL K</kbd>
                 </button>
                 
                 <div class="flex items-center gap-3 ml-2">
-                    <a href="{% url 'devhub_app:profile' %}" class="relative">
+                    <a href="{% url 'devhub_app:profile' %}" class="relative focus-visible:ring-2 focus-visible:ring-mint rounded-xl" aria-label="View profile">
                         <div class="w-9 h-9 rounded-xl overflow-hidden border-2 border-mint/20 hover:border-mint transition-all">
-                            <img src="https://api.dicebear.com/7.x/bottts/svg?seed={{ user.profile.avatar_seed }}" alt="Avatar" class="w-full h-full object-cover">
+                            <img src="https://api.dicebear.com/7.x/bottts/svg?seed={{ user.profile.avatar_seed }}" alt="Your avatar" class="w-full h-full object-cover" loading="lazy">
                         </div>
-                        <span class="notification-dot"></span>
+                        <span class="notification-dot" aria-hidden="true"></span>
                     </a>
                 </div>
                 
                 <form method="post" action="{% url 'logout' %}" class="hidden md:block">
                     {% csrf_token %}
-                    <button class="text-sm font-bold text-slate-400 hover:text-coral transition-colors">Sign Out</button>
+                    <button class="text-sm font-bold text-slate-400 hover:text-coral transition-colors focus-visible:ring-2 focus-visible:ring-coral rounded-lg px-2 py-1">Sign Out</button>
                 </form>
                 {% else %}
-                <a href="{% url 'devhub_app:login' %}" class="px-5 py-2 rounded-full text-sm font-bold hover:text-mint transition-colors">Login</a>
-                <a href="{% url 'devhub_app:signup' %}" class="px-6 py-2.5 rounded-full bg-mint text-black font-black text-sm shadow-lg shadow-mint/20 hover:scale-105 transition-transform">Get Started</a>
+                <a href="{% url 'devhub_app:login' %}" class="px-5 py-2 rounded-full text-sm font-bold hover:text-mint transition-colors focus-visible:ring-2 focus-visible:ring-mint">Login</a>
+                <a href="{% url 'devhub_app:signup' %}" class="px-6 py-2.5 rounded-full bg-mint text-black font-black text-sm shadow-lg shadow-mint/20 hover:scale-105 transition-transform focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-mint">Get Started</a>
                 {% endif %}
-            </nav>
+            </div>
         </div>
     </header>
 
@@ -107,35 +111,41 @@
          x-transition:leave-start="opacity-100"
          x-transition:leave-end="opacity-0"
          class="fixed inset-0 z-50 md:hidden"
-         x-cloak>
+         x-cloak
+         @keydown.tab="openopencodeevent"
+         aria-label="Mobile navigation menu">
         <div class="fixed inset-0 bg-ink/90 backdrop-blur-sm" @click="sidebarOpen = false"></div>
-        <div class="fixed left-0 top-0 bottom-0 w-72 bg-ink border-r border-white/10 p-6 overflow-y-auto"
-             @click.away="sidebarOpen = false">
+        <div class="fixed left-0 top-0 bottom-0 w-72 bg-ink border-r border-white/10 p-6 overflow-y-auto overscroll-contain"
+             @click.away="sidebarOpen = false"
+             role="dialog"
+             aria-modal="true"
+             aria-label="Navigation menu"
+             x-ref="mobileSidebar">
             <div class="flex items-center justify-between mb-8">
-                <a href="{% url 'devhub_app:dashboard' %}" class="flex items-center gap-2.5">
+                <a href="{% url 'devhub_app:dashboard' %}" class="flex items-center gap-2.5 focus-visible:ring-2 focus-visible:ring-mint rounded-xl">
                     <div class="w-8 h-8 rounded-lg bg-mint flex items-center justify-center text-ink">
-                        <i data-lucide="terminal" class="w-5 h-5"></i>
+                        <i data-lucide="terminal" class="w-5 h-5" aria-hidden="true"></i>
                     </div>
                     <span class="text-lg font-black tracking-tight">DevHub</span>
                 </a>
-                <button @click="sidebarOpen = false" class="p-2 rounded-xl hover:bg-white/5 transition-colors">
-                    <i data-lucide="x" class="w-5 h-5"></i>
+                <button @click="sidebarOpen = false" class="p-2 rounded-xl hover:bg-white/5 transition-colors focus-visible:ring-2 focus-visible:ring-mint" aria-label="Close navigation menu">
+                    <i data-lucide="x" class="w-5 h-5" aria-hidden="true"></i>
                 </button>
             </div>
             
-            <nav class="space-y-1">
-                <a href="{% url 'devhub_app:dashboard' %}" class="sidebar-link"><i data-lucide="layout-dashboard"></i>Dashboard</a>
-                <a href="{% url 'devhub_app:feed' %}" class="sidebar-link"><i data-lucide="rss"></i>Feed</a>
-                <a href="{% url 'devhub_app:project-create' %}" class="sidebar-link"><i data-lucide="folder-plus"></i>New Project</a>
-                <a href="{% url 'devhub_app:post-create' %}" class="sidebar-link"><i data-lucide="pen-tool"></i>New Post</a>
+            <nav class="space-y-1" aria-label="Mobile navigation">
+                <a href="{% url 'devhub_app:dashboard' %}" class="sidebar-link focus-visible:ring-2 focus-visible:ring-mint" @click="sidebarOpen = false"><i data-lucide="layout-dashboard" aria-hidden="true"></i>Dashboard</a>
+                <a href="{% url 'devhub_app:feed' %}" class="sidebar-link focus-visible:ring-2 focus-visible:ring-mint" @click="sidebarOpen = false"><i data-lucide="rss" aria-hidden="true"></i>Feed</a>
+                <a href="{% url 'devhub_app:project-create' %}" class="sidebar-link focus-visible:ring-2 focus-visible:ring-mint" @click="sidebarOpen = false"><i data-lucide="folder-plus" aria-hidden="true"></i>New Project</a>
+                <a href="{% url 'devhub_app:post-create' %}" class="sidebar-link focus-visible:ring-2 focus-visible:ring-mint" @click="sidebarOpen = false"><i data-lucide="pen-tool" aria-hidden="true"></i>New Post</a>
                 <hr class="my-4 border-white/5">
-                <a href="{% url 'devhub_app:audit' %}" class="sidebar-link"><i data-lucide="activity"></i>Audit Log</a>
-                <a href="{% url 'devhub_app:transactions' %}" class="sidebar-link"><i data-lucide="credit-card"></i>Transactions</a>
+                <a href="{% url 'devhub_app:audit' %}" class="sidebar-link focus-visible:ring-2 focus-visible:ring-mint" @click="sidebarOpen = false"><i data-lucide="activity" aria-hidden="true"></i>Audit Log</a>
+                <a href="{% url 'devhub_app:transactions' %}" class="sidebar-link focus-visible:ring-2 focus-visible:ring-mint" @click="sidebarOpen = false"><i data-lucide="credit-card" aria-hidden="true"></i>Transactions</a>
                 <hr class="my-4 border-white/5">
-                <a href="{% url 'devhub_app:profile' %}" class="sidebar-link"><i data-lucide="user"></i>Profile</a>
+                <a href="{% url 'devhub_app:profile' %}" class="sidebar-link focus-visible:ring-2 focus-visible:ring-mint" @click="sidebarOpen = false"><i data-lucide="user" aria-hidden="true"></i>Profile</a>
                 <form method="post" action="{% url 'logout' %}">
                     {% csrf_token %}
-                    <button class="sidebar-link w-full text-coral"><i data-lucide="log-out"></i>Sign Out</button>
+                    <button class="sidebar-link w-full text-coral focus-visible:ring-2 focus-visible:ring-coral"><i data-lucide="log-out" aria-hidden="true"></i>Sign Out</button>
                 </form>
             </nav>
         </div>
@@ -151,82 +161,97 @@
          x-transition:leave-end="opacity-0 scale-95"
          class="fixed inset-0 z-50 flex items-start justify-center pt-20 px-6 sm:pt-40"
          x-cloak
-         id="command-palette">
+         id="command-palette"
+         role="dialog"
+         aria-modal="true"
+         aria-label="Search and quick navigation">
         
         <div class="fixed inset-0 bg-ink/90 backdrop-blur-sm" @click="commandPaletteOpen = false"></div>
         
         <div class="w-full max-w-xl glass-card rounded-3xl shadow-2xl overflow-hidden relative" @click.away="commandPaletteOpen = false">
             <div class="p-4 border-b border-white/10 flex items-center gap-3">
-                <i data-lucide="search" class="text-slate-400 w-5 h-5"></i>
+                <i data-lucide="search" class="text-slate-400 w-5 h-5" aria-hidden="true"></i>
                 <input type="text" 
                        placeholder="Search everything... (Dashboard, Feed, Profile)" 
                        class="w-full bg-transparent border-none outline-none text-lg placeholder:text-slate-500"
-                       autofocus>
+                       autofocus
+                       role="combobox"
+                       aria-expanded="true"
+                       aria-controls="palette-results"
+                       aria-label="Search pages">
             </div>
-            <div class="p-2">
-                <p class="text-2xs uppercase tracking-[0.2em] text-slate-500 px-3 py-2">Quick Navigation</p>
+            <div class="p-2" id="palette-results" role="listbox" aria-label="Search results">
+                <p class="text-xs uppercase tracking-widest text-slate-500 px-3 py-2 font-bold">Quick Navigation</p>
                 <div class="grid grid-cols-1 gap-1">
-                    <a href="{% url 'devhub_app:dashboard' %}" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-mint/10 group transition-all">
-                        <i data-lucide="layout-dashboard" class="w-5 h-5 text-slate-400 group-hover:text-mint"></i>
+                    <a href="{% url 'devhub_app:dashboard' %}" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-mint/10 group transition-all focus-visible:ring-2 focus-visible:ring-mint" role="option" aria-selected="false" @click="commandPaletteOpen = false">
+                        <i data-lucide="layout-dashboard" class="w-5 h-5 text-slate-400 group-hover:text-mint" aria-hidden="true"></i>
                         <span class="font-medium">Dashboard</span>
                     </a>
-                    <a href="{% url 'devhub_app:feed' %}" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-mint/10 group transition-all">
-                        <i data-lucide="rss" class="w-5 h-5 text-slate-400 group-hover:text-mint"></i>
+                    <a href="{% url 'devhub_app:feed' %}" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-mint/10 group transition-all focus-visible:ring-2 focus-visible:ring-mint" role="option" aria-selected="false" @click="commandPaletteOpen = false">
+                        <i data-lucide="rss" class="w-5 h-5 text-slate-400 group-hover:text-mint" aria-hidden="true"></i>
                         <span class="font-medium">Feed</span>
                     </a>
-                    <a href="{% url 'devhub_app:profile' %}" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-mint/10 group transition-all">
-                        <i data-lucide="user" class="w-5 h-5 text-slate-400 group-hover:text-mint"></i>
+                    <a href="{% url 'devhub_app:profile' %}" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-mint/10 group transition-all focus-visible:ring-2 focus-visible:ring-mint" role="option" aria-selected="false" @click="commandPaletteOpen = false">
+                        <i data-lucide="user" class="w-5 h-5 text-slate-400 group-hover:text-mint" aria-hidden="true"></i>
                         <span class="font-medium">Profile</span>
                     </a>
                 </div>
             </div>
             <div class="bg-white/5 px-5 py-3 flex justify-between items-center">
-                <span class="text-2xs text-slate-500">Tip: Use arrows to navigate</span>
-                <kbd class="px-2 py-1 rounded bg-black/30 text-2xs text-slate-400">ESC to close</kbd>
+                <span class="text-xs text-slate-500">Tip: Use arrows to navigate</span>
+                <kbd class="px-2 py-1 rounded bg-black/30 text-xs text-slate-400" aria-hidden="true">ESC to close</kbd>
             </div>
         </div>
     </div>
 
-    <!-- Django Messages (Hidden, converted to Toasts) -->
+    <!-- HTMX Loading Progress Bar -->
+    <div id="page-loader" class="fixed top-0 left-0 right-0 h-0.5 z-[100] pointer-events-none" aria-hidden="true">
+        <div class="h-full bg-mint transition-all duration-300 ease-out" style="width: 0"></div>
+    </div>
+
+    <!-- Django Messages (always visible, progressively enhanced to toasts) -->
     {% if messages %}
-    <div class="hidden">
+    <div class="django-message-wrapper">
         {% for message in messages %}
-        <div class="django-message" data-type="{{ message.tags }}">{{ message }}</div>
+        <div class="django-message toast-fallback border-l-4 {% if message.tags == 'error' %}border-coral bg-coral/10 text-coral{% else %}border-mint bg-mint/10 text-mint{% endif %} px-4 py-3 mb-2 rounded-r-xl text-sm font-bold" data-type="{{ message.tags }}" role="alert">
+            {{ message }}
+        </div>
         {% endfor %}
     </div>
     {% endif %}
 
-    <main id="main-content" class="relative z-10 transition-all duration-500">
+    <main id="main-content" class="relative z-10 transition-all duration-500 pb-20 md:pb-0">
         {% block body %}{% endblock %}
     </main>
 
     <!-- Mobile Bottom Navigation -->
     {% if user.is_authenticated %}
-    <nav class="md:hidden fixed bottom-0 inset-x-0 bg-ink/90 backdrop-blur-xl border-t border-white/10 z-40 px-6 py-3 flex items-center justify-between">
-        <a href="{% url 'devhub_app:dashboard' %}" class="flex flex-col items-center gap-1 text-slate-400 {% if request.resolver_match.url_name == 'dashboard' %}text-mint{% endif %}">
-            <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
-            <span class="text-2xs font-bold uppercase tracking-widest">Home</span>
+    <nav class="md:hidden fixed bottom-0 inset-x-0 bg-ink/90 backdrop-blur-xl border-t border-white/10 z-40 px-4 py-2 flex items-center justify-between" aria-label="Mobile navigation">
+        <a href="{% url 'devhub_app:dashboard' %}" class="min-w-[44px] min-h-[44px] flex flex-col items-center justify-center gap-0.5 text-slate-400 {% if request.resolver_match.url_name == 'dashboard' %}text-mint{% endif %} focus-visible:ring-2 focus-visible:ring-mint rounded-xl px-2" aria-label="Dashboard">
+            <i data-lucide="layout-dashboard" class="w-5 h-5" aria-hidden="true"></i>
+            <span class="text-[10px] font-bold uppercase tracking-wider">Home</span>
         </a>
-        <a href="{% url 'devhub_app:feed' %}" class="flex flex-col items-center gap-1 text-slate-400 {% if request.resolver_match.url_name == 'feed' %}text-mint{% endif %}">
-            <i data-lucide="rss" class="w-5 h-5"></i>
-            <span class="text-2xs font-bold uppercase tracking-widest">Feed</span>
+        <a href="{% url 'devhub_app:feed' %}" class="min-w-[44px] min-h-[44px] flex flex-col items-center justify-center gap-0.5 text-slate-400 {% if request.resolver_match.url_name == 'feed' %}text-mint{% endif %} focus-visible:ring-2 focus-visible:ring-mint rounded-xl px-2" aria-label="Feed">
+            <i data-lucide="rss" class="w-5 h-5" aria-hidden="true"></i>
+            <span class="text-[10px] font-bold uppercase tracking-wider">Feed</span>
         </a>
-        <button @click="commandPaletteOpen = true" class="w-12 h-12 rounded-full bg-mint text-ink flex items-center justify-center -mt-8 shadow-lg shadow-mint/30 border-4 border-ink">
-            <i data-lucide="plus" class="w-5 h-5"></i>
+        <button @click="commandPaletteOpen = true" class="min-w-[44px] min-h-[44px] w-12 h-12 rounded-full bg-mint text-ink flex items-center justify-center -mt-6 shadow-lg shadow-mint/30 border-4 border-ink focus-visible:ring-2 focus-visible:ring-white" aria-label="Open search palette">
+            <i data-lucide="plus" class="w-5 h-5" aria-hidden="true"></i>
         </button>
-        <a href="{% url 'devhub_app:audit' %}" class="flex flex-col items-center gap-1 text-slate-400 {% if request.resolver_match.url_name == 'audit' %}text-mint{% endif %}">
-            <i data-lucide="activity" class="w-5 h-5"></i>
-            <span class="text-2xs font-bold uppercase tracking-widest">Audit</span>
+        <a href="{% url 'devhub_app:audit' %}" class="min-w-[44px] min-h-[44px] flex flex-col items-center justify-center gap-0.5 text-slate-400 {% if request.resolver_match.url_name == 'audit' %}text-mint{% endif %} focus-visible:ring-2 focus-visible:ring-mint rounded-xl px-2" aria-label="Audit log">
+            <i data-lucide="activity" class="w-5 h-5" aria-hidden="true"></i>
+            <span class="text-[10px] font-bold uppercase tracking-wider">Audit</span>
         </a>
-        <a href="{% url 'devhub_app:profile' %}" class="flex flex-col items-center gap-1 text-slate-400 {% if request.resolver_match.url_name == 'profile' %}text-mint{% endif %}">
-            <i data-lucide="user" class="w-5 h-5"></i>
-            <span class="text-2xs font-bold uppercase tracking-widest">You</span>
+        <a href="{% url 'devhub_app:profile' %}" class="min-w-[44px] min-h-[44px] flex flex-col items-center justify-center gap-0.5 text-slate-400 {% if request.resolver_match.url_name == 'profile' %}text-mint{% endif %} focus-visible:ring-2 focus-visible:ring-mint rounded-xl px-2" aria-label="Profile">
+            <i data-lucide="user" class="w-5 h-5" aria-hidden="true"></i>
+            <span class="text-[10px] font-bold uppercase tracking-wider">You</span>
         </a>
     </nav>
     {% endif %}
 
     <!-- Scripts -->
-    <script src="https://unpkg.com/htmx.org@2.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
     <script type="module" src="{% static 'js/socket_client.js' %}"></script>
     <script src="{% static 'js/ui/micro.js' %}"></script>
@@ -234,6 +259,21 @@
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register("{% static 'service-worker.js' %}");
         }
+    </script>
+    <script>
+        // ─── HTMX Loading Progress Bar ───
+        document.addEventListener("htmx:beforeSend", () => {
+            const bar = document.querySelector("#page-loader div");
+            if (bar) bar.style.width = "80%";
+        });
+        document.addEventListener("htmx:afterSettle", () => {
+            const bar = document.querySelector("#page-loader div");
+            if (bar) { bar.style.width = "100%"; setTimeout(() => { bar.style.width = "0"; }, 400); }
+        });
+        document.addEventListener("htmx:responseError", () => {
+            const bar = document.querySelector("#page-loader div");
+            if (bar) bar.style.width = "0";
+        });
     </script>
 </body>
 </html>

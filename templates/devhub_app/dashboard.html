@@ -1,8 +1,5 @@
 {% extends "devhub_app/base.html" %}
 {% block title %}Dashboard | DevHub{% endblock %}
-{% block head %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-{% endblock %}
 {% block body %}
 <main class="max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-10">
     <!-- Header -->
@@ -38,7 +35,7 @@
     </section>
 
     <!-- Stats Grid -->
-    <section data-dashboard-summary class="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 animate-in stagger-2">
+    <section data-dashboard-summary class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 animate-in stagger-2">
         <div class="glass-card-interactive rounded-[2rem] p-6">
             <div class="flex items-center justify-between mb-4">
                 <div class="w-10 h-10 rounded-xl bg-mint/10 flex items-center justify-center text-mint">
@@ -106,14 +103,10 @@
                 <h2 class="text-2xl font-black tracking-tight">Activity Heatmap</h2>
                 <span class="badge badge-purple">Yearly</span>
             </div>
-            <div class="overflow-x-auto">
-                <div class="grid grid-cols-[repeat(53,1fr)] gap-1.5 min-w-[280px]">
-                    {% for i in "x"|rjust:"371" %}
-                    <div class="aspect-square rounded-[2px] {% if forloop.counter|divisibleby:7 %}bg-mint/40{% elif forloop.counter|divisibleby:13 %}bg-mint/20{% else %}bg-white/5{% endif %} hover:ring-2 hover:ring-mint transition-all cursor-help" title="Contribution on Day {{ forloop.counter }}"></div>
-                    {% endfor %}
-                </div>
+            <div class="overflow-x-auto" id="activity-heatmap">
+                <p class="text-xs text-slate-500 text-center py-8">Loading activity data...</p>
             </div>
-            <div class="flex items-center justify-end gap-2 mt-4 text-2xs text-slate-500 uppercase tracking-widest font-bold">
+            <div class="flex items-center justify-end gap-2 mt-4 text-xs text-slate-500 uppercase tracking-widest font-bold">
                 <span>Less</span>
                 <div class="flex gap-1">
                     <div class="w-3 h-3 rounded-[2px] bg-white/5"></div>
@@ -123,6 +116,23 @@
                 </div>
                 <span>More</span>
             </div>
+            <script>
+                (function() {
+                    var container = document.getElementById("activity-heatmap");
+                    if (!container) return;
+                    var grid = document.createElement("div");
+                    grid.className = "grid grid-cols-[repeat(53,1fr)] gap-1.5 min-w-[280px]";
+                    for (var i = 0; i < 371; i++) {
+                        var cell = document.createElement("div");
+                        var level = i % 7 === 0 ? "bg-mint/40" : i % 13 === 0 ? "bg-mint/20" : "bg-white/5";
+                        cell.className = "aspect-square rounded-[2px] " + level + " hover:ring-2 hover:ring-mint transition-all cursor-help";
+                        cell.title = "Day " + (i + 1);
+                        grid.appendChild(cell);
+                    }
+                    container.innerHTML = "";
+                    container.appendChild(grid);
+                })();
+            </script>
         </div>
     </section>
 

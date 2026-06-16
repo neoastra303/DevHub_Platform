@@ -51,14 +51,12 @@
 
             <form method="post" class="grid md:grid-cols-2 gap-5">
                 {% csrf_token %}
-                {% for field in form %}
-                <div class="{% if field.name == 'password1' or field.name == 'password2' %}md:col-span-2{% endif %} field-shell">
-                    <label class="block text-xs uppercase tracking-[0.2em] font-bold text-slate-500 mb-2">{{ field.label }}</label>
-                    {{ field }}
-                    {% if field.help_text %}<p class="text-2xs text-slate-500 mt-1.5">{{ field.help_text }}</p>{% endif %}
-                    {% for error in field.errors %}<p class="text-xs text-coral mt-1.5 font-bold">{{ error }}</p>{% endfor %}
-                </div>
-                {% endfor %}
+                {% include "devhub_app/components/form_field.html" with label="Username" field=form.username icon="user" %}
+                {% include "devhub_app/components/form_field.html" with label="First Name" field=form.first_name icon="user" %}
+                {% include "devhub_app/components/form_field.html" with label="Last Name" field=form.last_name icon="user" %}
+                {% include "devhub_app/components/form_field.html" with label="Email" field=form.email icon="mail" %}
+                <div class="md:col-span-2">{% include "devhub_app/components/form_field.html" with label="Password" field=form.password1 icon="lock" %}</div>
+                <div class="md:col-span-2">{% include "devhub_app/components/form_field.html" with label="Confirm Password" field=form.password2 icon="lock" %}</div>
                 <div class="md:col-span-2">
                     <button type="submit" class="w-full px-6 py-4 rounded-2xl bg-mint text-black font-black hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-mint/10">
                         Create Account

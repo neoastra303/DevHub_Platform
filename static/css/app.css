@@ -1,10 +1,32 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+/* ─── Font: Inter via <link> in base.html now ─── */
 
 body {
     background: #08111b;
     color: #f8fafc;
     font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
     overflow-x: hidden;
+}
+
+/* ─── Accessibility: Reduced Motion ─── */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ─── Focus Visible ─── */
+.sidebar-link:focus-visible,
+.glass-card-interactive:focus-visible,
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px #08111b, 0 0 0 4px #73f5c8 !important;
+    border-radius: 0.75rem;
 }
 
 /* ─── Background Effects ─── */
@@ -20,6 +42,8 @@ body {
     position: absolute;
     width: 60vw;
     height: 60vw;
+    max-width: 800px;
+    max-height: 800px;
     border-radius: 50%;
     filter: blur(80px);
     opacity: 0.12;
@@ -78,6 +102,13 @@ body {
     box-shadow: 0 0 0 1px rgba(115, 245, 200, 0.1), 0 20px 40px rgba(0, 0, 0, 0.3);
 }
 
+/* ─── Page Transitions ─── */
+.page-exiting {
+    opacity: 0;
+    transform: translateY(8px);
+    transition: none;
+}
+
 /* ─── Sidebar ─── */
 .sidebar-link {
     display: flex;
@@ -119,10 +150,10 @@ body {
     gap: 0.375rem;
     padding: 0.25rem 0.75rem;
     border-radius: 9999px;
-    font-size: 0.625rem;
+    font-size: 0.75rem;
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.05em;
     line-height: 1;
 }
 
@@ -229,8 +260,8 @@ body {
 
 .toggle-switch .toggle-knob {
     position: absolute;
-    left: 0.25rem;
     top: 0.25rem;
+    left: 0.25rem;
     width: 1rem;
     height: 1rem;
     background: #64748b;
@@ -239,7 +270,7 @@ body {
 }
 
 .toggle-switch[data-checked="true"] .toggle-knob {
-    left: 1.5rem;
+    transform: translateX(1.25rem);
     background: #73f5c8;
 }
 
@@ -251,10 +282,10 @@ body {
 
 .table-modern thead th {
     padding: 0.75rem 1rem;
-    font-size: 0.625rem;
+    font-size: 0.75rem;
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.15em;
+    letter-spacing: 0.1em;
     color: #64748b;
     text-align: left;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
@@ -292,17 +323,9 @@ body {
 }
 
 /* ─── Trend Indicator ─── */
-.trend-up {
-    color: #73f5c8;
-}
-
-.trend-down {
-    color: #ff8e6e;
-}
-
-.trend-neutral {
-    color: #94a3b8;
-}
+.trend-up { color: #73f5c8; }
+.trend-down { color: #ff8e6e; }
+.trend-neutral { color: #94a3b8; }
 
 /* ─── Skeleton Loading ─── */
 .skeleton {
@@ -317,10 +340,7 @@ body {
 }
 
 /* ─── Button Ripple ─── */
-.ripple-container {
-    position: relative;
-    overflow: hidden;
-}
+.ripple-container { position: relative; overflow: hidden; }
 
 .ripple-effect {
     position: absolute;
@@ -357,9 +377,7 @@ body {
     color: #e2e8f0;
 }
 
-.prose-custom p {
-    margin-bottom: 1rem;
-}
+.prose-custom p { margin-bottom: 1rem; }
 
 .prose-custom code {
     background: rgba(115, 245, 200, 0.08);
