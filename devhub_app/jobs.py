@@ -1,10 +1,35 @@
 import csv
 import io
 
+from asgiref.sync import async_to_sync
 from celery import shared_task
+from channels.layers import get_channel_layer
+from django.urls import reverse
 from django.utils import timezone
 
 from .models import AuditLog, BackgroundJob, Notification
+
+
+def _push_notification_via_websocket(notification):
+    try:
+        channel_layer = get_channel_layer()
+        group_name = f"user_{notification.recipient.id}_notifications"
+        async_to_sync(channel_layer.group_send)(
+            group_name,
+            {
+                "type": "send_notification",
+                "content": {
+                    "id": notification.id,
+                    "title": notification.title,
+                    "message": notification.message,
+                    "link": notification.link,
+                    "is_read": notification.is_read,
+                    "created_at": notification.created_at.isoformat(),
+                },
+            },
+        )
+    except Exception:
+        pass  # channel layer may not be available (e.g., in tests)
 
 
 @shared_task(bind=True)
@@ -16,13 +41,14 @@ def process_background_job_task(self, job_id):
     
     result = process_background_job(job)
     
-    # Notify user when job finishes
-    Notification.objects.create(
+    notification = Notification.objects.create(
         recipient=job.requested_by,
         title=f"Job {job.get_job_type_display()} Complete",
         message=f"Your background job has finished with status: {job.get_status_display()}",
-        link=f"/audit/" if job.job_type == BackgroundJob.JobType.AUDIT_EXPORT else ""
+        link=reverse("devhub_app:audit") if job.job_type == BackgroundJob.JobType.AUDIT_EXPORT else ""
     )
+    
+    _push_notification_via_websocket(notification)
     
     return result
 
@@ -69,13 +95,13 @@ def _process_audit_export(job):
     if action:
         logs = logs.filter(action=action)
     if target_type:
-        logs = logs.filter(target_type=target_type)
+        logs = logs.filter(content_type__model=target_type)
 
     buffer = io.StringIO()
     writer = csv.writer(buffer)
     writer.writerow(["id", "action", "target_type", "target_id", "created_at", "metadata"])
     for log in logs.order_by("-created_at"):
-        writer.writerow([log.id, log.action, log.target_type, log.target_id, log.created_at.isoformat(), log.metadata])
+        writer.writerow([log.id, log.action, log.content_type.model, log.object_id, log.created_at.isoformat(), log.metadata])
 
     job.result = {
         "content_type": "text/csv",
