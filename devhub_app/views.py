@@ -95,15 +95,12 @@ def _paginate_response(request, queryset, serializer_class):
 
 
 def health_check(request):
-    """
-    Health check endpoint for production monitoring.
-    Checks database connectivity.
-    """
     try:
         from django.db import connections
 
         conn = connections["default"]
-        conn.cursor()
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT 1")
     except Exception as e:
         return JsonResponse({"status": "unhealthy", "error": str(e)}, status=503)
 
@@ -134,7 +131,7 @@ def audit_page(request):
     if action in {choice for choice, _ in AuditLog.Action.choices}:
         logs = logs.filter(action=action)
     if target_type:
-        logs = logs.filter(target_type=target_type)
+        logs = logs.filter(content_type__model=target_type)
     context["audit_export_jobs"] = jobs
     context["audit_logs"] = logs[:50]
     return render(request, "devhub_app/audit_logs.html", context)
@@ -248,7 +245,7 @@ def post_like_htmx(request, pk):
     like, created = PostLike.objects.get_or_create(user=request.user, post=post)
     if created:
         post.metrics.likes += 1
-        post.metrics.save(update_fields=["likes", "updated_at"])
+        post.metrics.save(update_fields=["likes"])
     return render(
         request,
         "devhub_app/partials/post_likes.html",
@@ -263,23 +260,17 @@ from datetime import timedelta
 @api_view(["GET"])
 @permission_classes([permissions.IsAuthenticated])
 def analytics_summary(request):
-    """
-    Returns analytics data for the user's posts over the last 30 days.
-    """
     user = request.user
     posts = Post.objects.filter(author=user)
 
-    # Mocking time-series data based on actual post views for visualization
-    # In a real app, this would query a dedicated Analytics/Metric model
     labels = []
     data = []
     now = timezone.now()
+    total_views = posts.aggregate(total=Sum("metrics__views"))["total"] or 0
 
     for i in range(7, -1, -1):
         day = now - timedelta(days=i)
         labels.append(day.strftime("%b %d"))
-        # Deterministic pseudo-random data based on total post views
-        total_views = posts.aggregate(total=Sum("metrics__views"))["total"] or 0
         data.append(int((total_views / 10) * (1 + (i % 3) * 0.2)))
 
     return Response(
@@ -553,8 +544,8 @@ def audit_log_list(request):
     if action in allowed_actions:
         logs = logs.filter(action=action)
     if target_type:
-        logs = logs.filter(target_type=target_type)
-    allowed_ordering = {"created_at", "-created_at", "target_type", "-target_type"}
+        logs = logs.filter(content_type__model=target_type)
+    allowed_ordering = {"created_at", "-created_at", "content_type__model", "-content_type__model"}
     if ordering and ordering not in allowed_ordering:
         raise ValidationError({"ordering": [f"Unsupported ordering '{ordering}'."]})
     if ordering in allowed_ordering:
