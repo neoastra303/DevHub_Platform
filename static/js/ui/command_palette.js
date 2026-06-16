@@ -39,5 +39,5 @@ function filterItems(query, containerId) {
 }
 
 export function initLiveSearch() {
-    window.filterItems = filterItems;
+    // Uses the generic [data-filter-item] filter from micro.js
 }
