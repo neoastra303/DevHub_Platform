@@ -160,6 +160,11 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = ("id", "author_name", "post", "project", "content", "created_at")
         read_only_fields = ("id", "created_at", "author_name")
 
+    def validate(self, attrs):
+        if not attrs.get("post") and not attrs.get("project"):
+            raise serializers.ValidationError("A comment must belong to either a post or a project.")
+        return attrs
+
 
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:

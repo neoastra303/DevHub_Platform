@@ -2,8 +2,6 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.db.models.signals import post_save
-from django.dispatch import receiver
 from django.utils.text import slugify
 
 
@@ -216,10 +214,16 @@ class PostLike(models.Model):
 class ViewEvent(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="view_events")
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
         ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"ViewEvent: {self.post.title} @ {self.created_at}"
+
+    def __repr__(self):
+        return f"<ViewEvent: {self.post.title[:30]} @ {self.created_at.date()}>"
 
 
 class TransactionLog(TimestampedModel):
@@ -339,12 +343,4 @@ class Notification(TimestampedModel):
         return f"<Notification: {self.title[:50]} {'✓' if self.is_read else '○'}>"
 
 
-@receiver(post_save, sender=get_user_model())
-def create_profile_for_user(sender, instance, created, **kwargs):
-    if created:
-        Profile.objects.create(
-            user=instance,
-            headline="Developer",
-            bio="This profile was created automatically.",
-            avatar_seed=instance.username,
-        )
+

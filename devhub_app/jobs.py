@@ -1,35 +1,11 @@
 import csv
 import io
 
-from asgiref.sync import async_to_sync
 from celery import shared_task
-from channels.layers import get_channel_layer
 from django.urls import reverse
 from django.utils import timezone
 
 from .models import AuditLog, BackgroundJob, Notification
-
-
-def _push_notification_via_websocket(notification):
-    try:
-        channel_layer = get_channel_layer()
-        group_name = f"user_{notification.recipient.id}_notifications"
-        async_to_sync(channel_layer.group_send)(
-            group_name,
-            {
-                "type": "send_notification",
-                "content": {
-                    "id": notification.id,
-                    "title": notification.title,
-                    "message": notification.message,
-                    "link": notification.link,
-                    "is_read": notification.is_read,
-                    "created_at": notification.created_at.isoformat(),
-                },
-            },
-        )
-    except Exception:
-        pass  # channel layer may not be available (e.g., in tests)
 
 
 @shared_task(bind=True)
@@ -48,7 +24,7 @@ def process_background_job_task(self, job_id):
         link=reverse("devhub_app:audit") if job.job_type == BackgroundJob.JobType.AUDIT_EXPORT else ""
     )
     
-    _push_notification_via_websocket(notification)
+    # Signal handler in signals.py pushes this to WebSocket automatically
     
     return result
 
@@ -100,12 +76,14 @@ def _process_audit_export(job):
     buffer = io.StringIO()
     writer = csv.writer(buffer)
     writer.writerow(["id", "action", "target_type", "target_id", "created_at", "metadata"])
+    row_count = 0
     for log in logs.order_by("-created_at"):
         writer.writerow([log.id, log.action, log.content_type.model, log.object_id, log.created_at.isoformat(), log.metadata])
+        row_count += 1
 
     job.result = {
         "content_type": "text/csv",
         "filename": f"audit-export-{job.pk}.csv",
         "content": buffer.getvalue(),
-        "row_count": logs.count(),
+        "row_count": row_count,
     }

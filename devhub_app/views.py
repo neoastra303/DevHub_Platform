@@ -1,3 +1,7 @@
+import logging
+
+from datetime import timedelta
+
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
@@ -9,10 +13,12 @@ from django.contrib.auth.views import (
     PasswordResetDoneView,
     PasswordResetView,
 )
-from django.db.models import Q, Sum
+from django.db import connection
+from django.db.models import Count, F, Q, Sum
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.views.generic import CreateView, DeleteView, UpdateView
 from rest_framework import permissions, viewsets, filters
 from rest_framework.decorators import action, api_view, permission_classes
@@ -27,7 +33,7 @@ from .filters import PostFilter, ProjectFilter
 from .forms import PostForm, ProfileForm, ProjectForm, SignUpForm, TransactionLogForm
 from .jobs import enqueue_audit_export_job
 from .mixins import QueryValidationMixin
-from .models import AuditLog, BackgroundJob, Post, PostLike, PostMetric, Project, TransactionLog, Comment, Notification
+from .models import AuditLog, BackgroundJob, Post, PostLike, PostMetric, Profile, Project, TransactionLog, Comment, Notification, ViewEvent
 from .permissions import IsOwnerObjectPermission
 from .serializers import (
     AuditLogSerializer,
@@ -44,6 +50,8 @@ from .serializers import (
 from .services import bootstrap_demo_user
 from .throttling import ApiBurstThrottle, ApiWriteThrottle, check_ip_rate_limit
 
+logger = logging.getLogger(__name__)
+
 
 def _ensure_bootstrap_data():
     """Only bootstrap if it hasn't been done yet."""
@@ -59,12 +67,13 @@ def _current_user(request):
 
 def _shared_page_context(request):
     user = _current_user(request)
-    profile = user.profile
+    profile, _ = Profile.objects.get_or_create(
+        user=user, defaults={"headline": "Developer", "bio": ""}
+    )
     projects = Project.objects.filter(owner=user).prefetch_related("technologies")
     posts = Post.objects.filter(author=user)
     transactions = TransactionLog.objects.filter(user=user)
 
-    # Cache the count if we are going to use it multiple times
     project_count = projects.count()
     if profile.active_projects != project_count:
         profile.active_projects = project_count
@@ -96,10 +105,7 @@ def _paginate_response(request, queryset, serializer_class):
 
 def health_check(request):
     try:
-        from django.db import connections
-
-        conn = connections["default"]
-        with conn.cursor() as cursor:
+        with connection.cursor() as cursor:
             cursor.execute("SELECT 1")
     except Exception as e:
         return JsonResponse({"status": "unhealthy", "error": str(e)}, status=503)
@@ -244,8 +250,8 @@ def post_like_htmx(request, pk):
     post = get_object_or_404(Post, pk=pk)
     like, created = PostLike.objects.get_or_create(user=request.user, post=post)
     if created:
-        post.metrics.likes += 1
-        post.metrics.save(update_fields=["likes"])
+        PostMetric.objects.get_or_create(post=post)
+        PostMetric.objects.filter(post=post).update(likes=F("likes") + 1)
     return render(
         request,
         "devhub_app/partials/post_likes.html",
@@ -253,25 +259,22 @@ def post_like_htmx(request, pk):
     )
 
 
-from django.utils import timezone
-from datetime import timedelta
-
-
 @api_view(["GET"])
 @permission_classes([permissions.IsAuthenticated])
 def analytics_summary(request):
     user = request.user
-    posts = Post.objects.filter(author=user)
-
+    now = timezone.now()
     labels = []
     data = []
-    now = timezone.now()
-    total_views = posts.aggregate(total=Sum("metrics__views"))["total"] or 0
 
     for i in range(7, -1, -1):
         day = now - timedelta(days=i)
         labels.append(day.strftime("%b %d"))
-        data.append(int((total_views / 10) * (1 + (i % 3) * 0.2)))
+        count = ViewEvent.objects.filter(
+            post__author=user,
+            created_at__date=day.date(),
+        ).count()
+        data.append(count)
 
     return Response(
         {
@@ -298,13 +301,18 @@ def profile_skills_analytics(request):
 
     # Base skills from profile get a value of 80
     # Technologies from projects add 5 points each
+    tech_counts = dict(
+        Project.objects.filter(owner=user)
+        .values("technologies__name")
+        .annotate(count=Count("id"))
+        .values_list("technologies__name", "count")
+    )
     data = []
-    labels = skills[:6]  # Limit to 6 for best radar look
+    labels = skills[:6]
 
     for skill in labels:
         score = 60
-        # Check how many projects use this skill (case insensitive)
-        count = Project.objects.filter(owner=user, technologies__name__icontains=skill).count()
+        count = tech_counts.get(skill, 0)
         score += min(count * 10, 40)
         data.append(score)
 
@@ -350,9 +358,6 @@ class PostUpdateView(OwnerQuerySetMixin, UpdateView):
         )
         messages.success(self.request, "Post updated.")
         return response
-
-    def get_success_url(self):
-        return str(self.success_url)
 
 
 class PostDeleteView(OwnerQuerySetMixin, DeleteView):
@@ -454,11 +459,7 @@ class PostViewSet(QueryValidationMixin, viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         post = serializer.save(author=self.request.user)
-        try:
-            PostMetric.objects.create(post=post)
-        except Exception as e:
-            # log or handle error
-            pass
+        PostMetric.objects.get_or_create(post=post)
         record_audit_event(
             actor=self.request.user, action=AuditLog.Action.CREATE, target=post, metadata={"source": "api"}
         )
@@ -617,7 +618,7 @@ def dashboard_summary(request):
     return Response(
         {
             "points": profile.points,
-            "active_projects": context["projects"].count(),
+            "active_projects": profile.active_projects,
             "reputation": profile.reputation,
             "total_post_views": context["total_post_views"],
         }
@@ -672,7 +673,22 @@ class CommentViewSet(viewsets.ModelViewSet):
         return Comment.objects.filter(author=self.request.user)
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        comment = serializer.save(author=self.request.user)
+        record_audit_event(
+            actor=self.request.user, action=AuditLog.Action.CREATE, target=comment, metadata={"source": "api"}
+        )
+
+    def perform_update(self, serializer):
+        comment = serializer.save()
+        record_audit_event(
+            actor=self.request.user, action=AuditLog.Action.UPDATE, target=comment, metadata={"source": "api"}
+        )
+
+    def perform_destroy(self, instance):
+        record_audit_event(
+            actor=self.request.user, action=AuditLog.Action.DELETE, target=instance, metadata={"source": "api"}
+        )
+        instance.delete()
 
 
 class NotificationViewSet(viewsets.ReadOnlyModelViewSet):

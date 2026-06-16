@@ -7,12 +7,15 @@ function closeCommandPalette() {
 }
 
 export function initCommandPalette() {
+    let paletteOpen = false;
+    window.addEventListener("open-command-palette", () => { paletteOpen = true; });
+    window.addEventListener("close-command-palette", () => { paletteOpen = false; });
     window.addEventListener("keydown", (event) => {
         const key = event.key.toLowerCase();
         if ((event.ctrlKey || event.metaKey) && key === "k") {
             event.preventDefault();
             openCommandPalette();
-        } else if (event.key === "Escape") {
+        } else if (event.key === "Escape" && paletteOpen) {
             closeCommandPalette();
         }
     });

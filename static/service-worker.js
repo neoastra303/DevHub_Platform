@@ -22,7 +22,13 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  if (event.request.url.startsWith(self.location.origin) && event.request.method === "GET") {
+  const url = new URL(event.request.url);
+  if (
+    event.request.method === "GET" &&
+    url.origin === self.location.origin &&
+    !url.pathname.startsWith("/api/") &&
+    !url.pathname.startsWith("/accounts/")
+  ) {
     event.respondWith(
       caches.match(event.request).then((cached) => cached || fetch(event.request))
     );
