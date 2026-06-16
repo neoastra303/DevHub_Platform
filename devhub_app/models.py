@@ -18,6 +18,9 @@ class User(AbstractUser):
     def __str__(self):
         return self.username
 
+    def __repr__(self):
+        return f"<User: {self.username}>"
+
 
 class TimestampedModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -36,13 +39,16 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 
 class Skill(models.Model):
     name = models.CharField(max_length=80, unique=True)
-    slug = models.SlugField(max_length=90, unique=True)
+    slug = models.SlugField(max_length=90, unique=True, db_index=True)
 
     class Meta:
         ordering = ["name"]
 
     def __str__(self):
         return self.name
+
+    def __repr__(self):
+        return f"<Skill: {self.name}>"
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -52,13 +58,16 @@ class Skill(models.Model):
 
 class Technology(models.Model):
     name = models.CharField(max_length=80, unique=True)
-    slug = models.SlugField(max_length=90, unique=True)
+    slug = models.SlugField(max_length=90, unique=True, db_index=True)
 
     class Meta:
         ordering = ["name"]
 
     def __str__(self):
         return self.name
+
+    def __repr__(self):
+        return f"<Technology: {self.name}>"
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -91,6 +100,9 @@ class Profile(TimestampedModel):
     def __str__(self):
         return f"Profile<{self.user.username}>"
 
+    def __repr__(self):
+        return f"<Profile: {self.user.username}>"
+
     @property
     def skill_names(self):
         return list(self.skills.values_list("name", flat=True))
@@ -109,19 +121,22 @@ class Profile(TimestampedModel):
 class Project(TimestampedModel):
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="projects")
     title = models.CharField(max_length=200)
-    slug = models.SlugField(unique=True, max_length=220)
+    slug = models.SlugField(unique=True, max_length=220, db_index=True)
     summary = models.CharField(max_length=255)
     description = models.TextField()
     technologies = models.ManyToManyField(Technology, blank=True, related_name="projects")
     demo_url = models.URLField(blank=True)
     source_url = models.URLField(blank=True)
-    is_featured = models.BooleanField(default=False)
+    is_featured = models.BooleanField(default=False, db_index=True)
 
     class Meta:
         ordering = ["-is_featured", "-created_at"]
 
     def __str__(self):
         return self.title
+
+    def __repr__(self):
+        return f"<Project: {self.title[:50]}>"
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -164,6 +179,9 @@ class Post(TimestampedModel):
     def __str__(self):
         return self.title
 
+    def __repr__(self):
+        return f"<Post: {self.title[:50]}>"
+
 
 class PostMetric(models.Model):
     post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name="metrics")
@@ -172,6 +190,9 @@ class PostMetric(models.Model):
 
     def __str__(self):
         return f"Metrics for {self.post.title}"
+
+    def __repr__(self):
+        return f"<PostMetric: {self.post.title[:50]} ({self.views}v, {self.likes}l)>"
 
 
 class PostLike(models.Model):
@@ -187,6 +208,9 @@ class PostLike(models.Model):
 
     def __str__(self):
         return f"{self.user.username} liked {self.post.title}"
+
+    def __repr__(self):
+        return f"<PostLike: {self.user.username} -> {self.post.title[:30]}>"
 
 
 class ViewEvent(models.Model):
@@ -215,6 +239,9 @@ class TransactionLog(TimestampedModel):
     def __str__(self):
         return self.transaction_id
 
+    def __repr__(self):
+        return f"<TransactionLog: {self.transaction_id} ({self.status}, ${self.amount})>"
+
 
 class AuditLog(TimestampedModel):
     class Action(models.TextChoices):
@@ -229,7 +256,7 @@ class AuditLog(TimestampedModel):
         blank=True,
         related_name="audit_logs",
     )
-    action = models.CharField(max_length=20, choices=Action.choices)
+    action = models.CharField(max_length=20, choices=Action.choices, db_index=True)
 
     # Generic relationship
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
@@ -243,6 +270,9 @@ class AuditLog(TimestampedModel):
 
     def __str__(self):
         return f"{self.action}:{self.content_type}:{self.object_id}"
+
+    def __repr__(self):
+        return f"<AuditLog: {self.action} {self.content_type.model}#{self.object_id}>"
 
 
 class BackgroundJob(TimestampedModel):
@@ -260,8 +290,8 @@ class BackgroundJob(TimestampedModel):
         on_delete=models.CASCADE,
         related_name="background_jobs",
     )
-    job_type = models.CharField(max_length=40, choices=JobType.choices)
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.QUEUED)
+    job_type = models.CharField(max_length=40, choices=JobType.choices, db_index=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.QUEUED, db_index=True)
     payload = models.JSONField(default=dict, blank=True)
     result = models.JSONField(default=dict, blank=True)
     error_message = models.TextField(blank=True)
@@ -271,6 +301,9 @@ class BackgroundJob(TimestampedModel):
 
     def __str__(self):
         return f"{self.job_type}:{self.status}:{self.pk}"
+
+    def __repr__(self):
+        return f"<BackgroundJob: {self.job_type} [{self.status}]>"
 
 
 class Comment(TimestampedModel):
@@ -285,6 +318,9 @@ class Comment(TimestampedModel):
     def __str__(self):
         return f"Comment by {self.author.username} on {self.post or self.project}"
 
+    def __repr__(self):
+        return f"<Comment: by {self.author.username}>"
+
 
 class Notification(TimestampedModel):
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications")
@@ -298,6 +334,9 @@ class Notification(TimestampedModel):
 
     def __str__(self):
         return f"Notification for {self.recipient.username}: {self.title}"
+
+    def __repr__(self):
+        return f"<Notification: {self.title[:50]} {'✓' if self.is_read else '○'}>"
 
 
 @receiver(post_save, sender=get_user_model())
