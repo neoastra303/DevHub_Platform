@@ -1,10 +1,30 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.db import transaction
 
 from .models import Post, PostMetric, Profile, Project, TransactionLog
 
 
 def bootstrap_demo_user():
+    user_model = get_user_model()
+
+    if not settings.DEVHUB_CACHE_ENABLED:
+        return _bootstrap_demo_user()
+
+    cache_key = "devhub:bootstrap_demo_user"
+    user_id = cache.get(cache_key)
+    if user_id:
+        user = user_model.objects.filter(pk=user_id).first()
+        if user:
+            return user
+
+    user = _bootstrap_demo_user()
+    cache.set(cache_key, user.id, timeout=300)
+    return user
+
+
+def _bootstrap_demo_user():
     user_model = get_user_model()
 
     # Fast check without transaction

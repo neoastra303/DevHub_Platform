@@ -158,3 +158,5 @@ CACHES = {
         "LOCATION": "devhub-platform",
     }
 }
+
+DEVHUB_CACHE_ENABLED = env.bool("DEVHUB_CACHE_ENABLED", default=False)
