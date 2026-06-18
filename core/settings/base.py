@@ -104,6 +104,10 @@ LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "devhub_app:dashboard"
 LOGOUT_REDIRECT_URL = "devhub_app:landing"
 
+# Custom error pages
+handler404 = "django.views.defaults.page_not_found"
+handler500 = "django.views.defaults.server_error"
+
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.SessionAuthentication",
