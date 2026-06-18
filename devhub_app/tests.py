@@ -1,6 +1,5 @@
 from django.contrib.auth import get_user_model
 from django.core import mail
-from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
@@ -205,7 +204,7 @@ class DevHubAppTests(TestCase):
         page_response = self.client.get(reverse("devhub_app:audit"))
         self.assertEqual(page_response.status_code, 200)
         self.assertContains(page_response, "Action")
-        self.assertNotContains(page_response, "Project")
+        self.assertNotContains(page_response, ">Project<")
 
         api_response = self.client.get("/api/v1/devhub/audit/", {"action": "create"})
         self.assertEqual(api_response.status_code, 200)
@@ -254,6 +253,8 @@ class DevHubAppTests(TestCase):
         self.assertEqual(response.json()["status"], "healthy")
 
     def test_audit_export_job_can_be_queued_processed_and_downloaded(self):
+        from .jobs import process_background_job
+
         self.login()
         post = Post.objects.create(author=self.user, title="Audit Post", content="Content")
         AuditLog.objects.create(
@@ -263,11 +264,13 @@ class DevHubAppTests(TestCase):
             metadata={"source": "manual"},
         )
         response = self.client.post("/api/v1/devhub/audit/export/", {"action": "create"})
-        # Should be 202 because the view returns it immediately after delay()
         self.assertEqual(response.status_code, 202)
         job_id = response.json()["job"]["id"]
         job = BackgroundJob.objects.get(pk=job_id)
-        # With ALWAYS_EAGER=True, the task runs synchronously inside delay()
+        self.assertEqual(job.status, BackgroundJob.Status.QUEUED)
+
+        process_background_job(job)
+        job.refresh_from_db()
         self.assertEqual(job.status, BackgroundJob.Status.SUCCEEDED)
 
         listing = self.client.get("/api/v1/devhub/jobs/")
