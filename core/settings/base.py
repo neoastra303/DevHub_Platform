@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import environ
@@ -133,6 +132,13 @@ SPECTACULAR_SETTINGS = {
 DEVHUB_API_WRITE_RATE = env("DEVHUB_API_WRITE_RATE", default="30/hour")
 DEVHUB_API_BURST_RATE = env("DEVHUB_API_BURST_RATE", default="120/hour")
 
+# Cookie Security
+CSRF_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_HTTPONLY = True
+X_FRAME_OPTIONS = "DENY"
+
 # Celery Configuration Options
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="memory://")
 CELERY_RESULT_BACKEND = "django-db"
@@ -158,3 +164,10 @@ CACHES = {
         "LOCATION": "devhub-platform",
     }
 }
+
+# IP Ware Configuration
+IPWARE_META_PRECEDENCE_LIST = [
+    "HTTP_X_FORWARDED_FOR",
+    "HTTP_X_REAL_IP",
+    "REMOTE_ADDR",
+]
