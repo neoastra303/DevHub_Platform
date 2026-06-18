@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.core.cache import cache
+from ipware import get_client_ip
 from rest_framework.throttling import UserRateThrottle
 
 
@@ -26,9 +27,13 @@ class ApiBurstThrottle(ConfigurableUserRateThrottle):
 
 
 def check_ip_rate_limit(request, key_prefix, limit, window_seconds):
-    forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
-    ip_address = forwarded_for.split(",")[0].strip() if forwarded_for else request.META.get("REMOTE_ADDR", "unknown")
-    cache_key = f"rate-limit:{key_prefix}:{ip_address}"
+    client_ip, is_routable = get_client_ip(
+        request,
+        request_header_order=["X-Forwarded-For", "X-Real-IP", "REMOTE_ADDR"],
+    )
+    if client_ip is None:
+        client_ip = "unknown"
+    cache_key = f"rate-limit:{key_prefix}:{client_ip}"
     current = cache.get(cache_key, 0)
     if current >= limit:
         return False
