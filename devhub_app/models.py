@@ -1,7 +1,12 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractUser
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models import Q
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils.text import slugify
@@ -27,16 +32,9 @@ class TimestampedModel(models.Model):
         abstract = True
 
 
-from django.contrib.contenttypes.fields import GenericForeignKey
-from django.contrib.contenttypes.models import ContentType
-from django.core.validators import MinValueValidator, MaxValueValidator
-
-# ... (Previous imports)
-
-
 class Skill(models.Model):
     name = models.CharField(max_length=80, unique=True)
-    slug = models.SlugField(max_length=90, unique=True)
+    slug = models.SlugField(max_length=90, unique=True, db_index=True)
 
     class Meta:
         ordering = ["name"]
@@ -52,7 +50,7 @@ class Skill(models.Model):
 
 class Technology(models.Model):
     name = models.CharField(max_length=80, unique=True)
-    slug = models.SlugField(max_length=90, unique=True)
+    slug = models.SlugField(max_length=90, unique=True, db_index=True)
 
     class Meta:
         ordering = ["name"]
@@ -109,13 +107,13 @@ class Profile(TimestampedModel):
 class Project(TimestampedModel):
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="projects")
     title = models.CharField(max_length=200)
-    slug = models.SlugField(unique=True, max_length=220)
+    slug = models.SlugField(unique=True, max_length=220, db_index=True)
     summary = models.CharField(max_length=255)
     description = models.TextField()
     technologies = models.ManyToManyField(Technology, blank=True, related_name="projects")
     demo_url = models.URLField(blank=True)
     source_url = models.URLField(blank=True)
-    is_featured = models.BooleanField(default=False)
+    is_featured = models.BooleanField(default=False, db_index=True)
 
     class Meta:
         ordering = ["-is_featured", "-created_at"]
@@ -125,14 +123,26 @@ class Project(TimestampedModel):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            base_slug = slugify(self.title) or "project"
-            slug = base_slug
-            counter = 2
-            while Project.objects.exclude(pk=self.pk).filter(slug=slug).exists():
-                slug = f"{base_slug}-{counter}"
-                counter += 1
-            self.slug = slug
-        super().save(*args, **kwargs)
+            self.slug = self._generate_unique_slug()
+        try:
+            super().save(*args, **kwargs)
+        except Exception as exc:
+            if "slug" in str(exc) and "unique" in str(exc).lower():
+                self.slug = self._generate_unique_slug()
+                super().save(*args, **kwargs)
+            else:
+                raise
+
+    def _generate_unique_slug(self):
+        base_slug = slugify(self.title) or "project"
+        slug = base_slug
+        counter = 2
+        while Project.objects.exclude(pk=self.pk).filter(slug=slug).exists():
+            slug = f"{base_slug}-{counter}"
+            counter += 1
+            if counter > 100:
+                raise ValidationError("Could not generate a unique slug.")
+        return slug
 
     @property
     def technology_names(self):
@@ -192,7 +202,7 @@ class PostLike(models.Model):
 class ViewEvent(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="view_events")
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
         ordering = ["-created_at"]
@@ -207,7 +217,7 @@ class TransactionLog(TimestampedModel):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="transactions")
     transaction_id = models.CharField(max_length=32, unique=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING, db_index=True)
 
     class Meta:
         ordering = ["-created_at"]
@@ -229,7 +239,7 @@ class AuditLog(TimestampedModel):
         blank=True,
         related_name="audit_logs",
     )
-    action = models.CharField(max_length=20, choices=Action.choices)
+    action = models.CharField(max_length=20, choices=Action.choices, db_index=True)
 
     # Generic relationship
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
@@ -260,8 +270,8 @@ class BackgroundJob(TimestampedModel):
         on_delete=models.CASCADE,
         related_name="background_jobs",
     )
-    job_type = models.CharField(max_length=40, choices=JobType.choices)
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.QUEUED)
+    job_type = models.CharField(max_length=40, choices=JobType.choices, db_index=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.QUEUED, db_index=True)
     payload = models.JSONField(default=dict, blank=True)
     result = models.JSONField(default=dict, blank=True)
     error_message = models.TextField(blank=True)
@@ -281,6 +291,15 @@ class Comment(TimestampedModel):
 
     class Meta:
         ordering = ["-created_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    Q(post__isnull=False, project__isnull=True)
+                    | Q(post__isnull=True, project__isnull=False)
+                ),
+                name="comment_belongs_to_post_or_project",
+            )
+        ]
 
     def __str__(self):
         return f"Comment by {self.author.username} on {self.post or self.project}"
