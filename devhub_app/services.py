@@ -4,13 +4,18 @@ from django.db import transaction
 from .models import Post, PostMetric, Profile, Project, TransactionLog
 
 
-def bootstrap_demo_user():
+def get_or_bootstrap_demo_user():
+    """Return the demo user, creating all seed data on first call."""
     user_model = get_user_model()
-
-    # Fast check without transaction
     user = user_model.objects.filter(username="demo").first()
     if user and Profile.objects.filter(user=user).exists() and Project.objects.filter(owner=user).exists():
         return user
+    return _bootstrap_demo_user()
+
+
+def _bootstrap_demo_user():
+    user_model = get_user_model()
+
     with transaction.atomic():
         user, created = user_model.objects.get_or_create(
             username="demo",
@@ -63,3 +68,8 @@ def bootstrap_demo_user():
             )
 
     return user
+
+
+def bootstrap_demo_user():
+    """Backwards-compatible alias."""
+    return get_or_bootstrap_demo_user()
