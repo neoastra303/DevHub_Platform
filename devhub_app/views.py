@@ -12,7 +12,8 @@ from django.contrib.auth.views import (
     PasswordResetView,
 )
 from django.db import IntegrityError, transaction
-from django.db.models import F, Q, Sum
+from django.db.models import F, Q, Sum, Count
+from django.db.models.functions import TruncDate
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
@@ -28,7 +29,7 @@ from .audit import record_audit_event
 from .forms import PostForm, ProfileForm, ProjectForm, SignUpForm, TransactionLogForm
 from .jobs import enqueue_audit_export_job
 from .mixins import QueryValidationMixin
-from .models import AuditLog, BackgroundJob, Comment, Notification, Post, PostLike, PostMetric, Project, TransactionLog
+from .models import AuditLog, BackgroundJob, Comment, Notification, Post, PostLike, PostMetric, Project, TransactionLog, ViewEvent
 from .permissions import IsOwnerObjectPermission
 from .serializers import (
     AuditLogSerializer,
@@ -111,12 +112,72 @@ def landing_page(request):
 
 @login_required
 def feed_page(request):
-    return render(request, "devhub_app/feed.html", _shared_page_context(request))
+    from django.core.paginator import Paginator
+
+    posts = Post.objects.filter(author=request.user).select_related("author", "author__profile").prefetch_related("metrics")
+    query = request.GET.get("q", "").strip()
+    if query:
+        posts = posts.filter(Q(title__icontains=query) | Q(content__icontains=query))
+
+    paginator = Paginator(posts, 10)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    context = _shared_page_context(request)
+    context["page_obj"] = page_obj
+    context["search_query"] = query
+    return render(request, "devhub_app/feed.html", context)
 
 
 @login_required
 def dashboard_page(request):
-    return render(request, "devhub_app/dashboard.html", _shared_page_context(request))
+    context = _shared_page_context(request)
+    user = request.user
+
+    now = timezone.now()
+    thirty_days_ago = now - timedelta(days=30)
+    sixty_days_ago = now - timedelta(days=60)
+
+    total_views_30d = ViewEvent.objects.filter(
+        user=user, created_at__gte=thirty_days_ago
+    ).count()
+    total_views_prev_30d = ViewEvent.objects.filter(
+        user=user, created_at__gte=sixty_days_ago, created_at__lt=thirty_days_ago
+    ).count()
+
+    total_reactions_30d = PostLike.objects.filter(
+        user=user, created_at__gte=thirty_days_ago
+    ).count()
+    total_reactions_prev_30d = PostLike.objects.filter(
+        user=user, created_at__gte=sixty_days_ago, created_at__lt=thirty_days_ago
+    ).count()
+
+    post_count = Post.objects.filter(author=user).count()
+    project_count = Project.objects.filter(owner=user).count()
+
+    def _trend(current, previous):
+        if previous == 0:
+            return 100 if current > 0 else 0
+        return round(((current - previous) / previous) * 100)
+
+    context["total_views"] = total_views_30d
+    context["views_trend"] = _trend(total_views_30d, total_views_prev_30d)
+    context["total_reactions"] = total_reactions_30d
+    context["reactions_trend"] = _trend(total_reactions_30d, total_reactions_prev_30d)
+    context["post_count"] = post_count
+    context["project_count"] = project_count
+
+    views_by_day = (
+        ViewEvent.objects.filter(user=user, created_at__gte=thirty_days_ago)
+        .annotate(date=TruncDate("created_at"))
+        .values("date")
+        .annotate(count=Count("id"))
+        .order_by("date")
+    )
+    context["views_chart_labels"] = [entry["date"].strftime("%b %d") for entry in views_by_day]
+    context["views_chart_data"] = [entry["count"] for entry in views_by_day]
+
+    return render(request, "devhub_app/dashboard.html", context)
 
 
 @login_required

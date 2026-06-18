@@ -1,7 +1,8 @@
 {% extends "devhub_app/base.html" %}
+{% load static %}
 {% block title %}Dashboard | DevHub{% endblock %}
 {% block head %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'vendor/chart.min.js' %}"></script>
 {% endblock %}
 {% block body %}
 <main class="max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-10">
@@ -42,14 +43,26 @@
         <div class="glass-card-interactive rounded-[2rem] p-6">
             <div class="flex items-center justify-between mb-4">
                 <div class="w-10 h-10 rounded-xl bg-mint/10 flex items-center justify-center text-mint">
-                    <i data-lucide="zap" class="w-5 h-5"></i>
+                    <i data-lucide="eye" class="w-5 h-5"></i>
                 </div>
-                <span class="flex items-center gap-1 text-xs font-bold text-mint">
-                    <i data-lucide="trending-up" class="w-3.5 h-3.5"></i> +12%
+                <span class="flex items-center gap-1 text-xs font-bold {% if views_trend >= 0 %}text-mint{% else %}text-coral{% endif %}">
+                    {% if views_trend >= 0 %}<i data-lucide="trending-up" class="w-3.5 h-3.5"></i>{% else %}<i data-lucide="trending-down" class="w-3.5 h-3.5"></i>{% endif %} {{ views_trend }}%
                 </span>
             </div>
-            <p class="text-slate-500 text-2xs uppercase tracking-widest font-bold mb-1">Points</p>
-            <p data-dashboard-metric="points" class="text-3xl font-black" data-count-up="{{ profile.points }}">{{ profile.points }}</p>
+            <p class="text-slate-500 text-2xs uppercase tracking-widest font-bold mb-1">Views (30d)</p>
+            <p class="text-3xl font-black" data-count-up="{{ total_views }}">{{ total_views }}</p>
+        </div>
+        <div class="glass-card-interactive rounded-[2rem] p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-10 h-10 rounded-xl bg-coral/10 flex items-center justify-center text-coral">
+                    <i data-lucide="heart" class="w-5 h-5"></i>
+                </div>
+                <span class="flex items-center gap-1 text-xs font-bold {% if reactions_trend >= 0 %}text-mint{% else %}text-coral{% endif %}">
+                    {% if reactions_trend >= 0 %}<i data-lucide="trending-up" class="w-3.5 h-3.5"></i>{% else %}<i data-lucide="trending-down" class="w-3.5 h-3.5"></i>{% endif %} {{ reactions_trend }}%
+                </span>
+            </div>
+            <p class="text-slate-500 text-2xs uppercase tracking-widest font-bold mb-1">Reactions (30d)</p>
+            <p class="text-3xl font-black" data-count-up="{{ total_reactions }}">{{ total_reactions }}</p>
         </div>
         <div class="glass-card-interactive rounded-[2rem] p-6">
             <div class="flex items-center justify-between mb-4">
@@ -57,35 +70,23 @@
                     <i data-lucide="layers" class="w-5 h-5"></i>
                 </div>
                 <span class="flex items-center gap-1 text-xs font-bold text-slate-500">
-                    <i data-lucide="minus" class="w-3.5 h-3.5"></i> Stable
+                    <i data-lucide="minus" class="w-3.5 h-3.5"></i> Total
                 </span>
             </div>
             <p class="text-slate-500 text-2xs uppercase tracking-widest font-bold mb-1">Projects</p>
-            <p data-dashboard-metric="active_projects" class="text-3xl font-black" data-count-up="{{ projects|length }}">{{ projects|length }}</p>
-        </div>
-        <div class="glass-card-interactive rounded-[2rem] p-6">
-            <div class="flex items-center justify-between mb-4">
-                <div class="w-10 h-10 rounded-xl bg-coral/10 flex items-center justify-center text-coral">
-                    <i data-lucide="award" class="w-5 h-5"></i>
-                </div>
-                <span class="flex items-center gap-1 text-xs font-bold text-coral">
-                    <i data-lucide="trending-up" class="w-3.5 h-3.5"></i> +8%
-                </span>
-            </div>
-            <p class="text-slate-500 text-2xs uppercase tracking-widest font-bold mb-1">Reputation</p>
-            <p data-dashboard-metric="reputation" class="text-3xl font-black" data-count-up="{{ profile.reputation }}">{{ profile.reputation }}</p>
+            <p class="text-3xl font-black" data-count-up="{{ project_count }}">{{ project_count }}</p>
         </div>
         <div class="glass-card-interactive rounded-[2rem] p-6">
             <div class="flex items-center justify-between mb-4">
                 <div class="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400">
-                    <i data-lucide="eye" class="w-5 h-5"></i>
+                    <i data-lucide="file-text" class="w-5 h-5"></i>
                 </div>
-                <span class="flex items-center gap-1 text-xs font-bold text-mint">
-                    <i data-lucide="trending-up" class="w-3.5 h-3.5"></i> +24%
+                <span class="flex items-center gap-1 text-xs font-bold text-slate-500">
+                    <i data-lucide="minus" class="w-3.5 h-3.5"></i> Total
                 </span>
             </div>
-            <p class="text-slate-500 text-2xs uppercase tracking-widest font-bold mb-1">Views</p>
-            <p data-dashboard-metric="total_post_views" class="text-3xl font-black" data-count-up="{{ total_post_views }}">{{ total_post_views }}</p>
+            <p class="text-slate-500 text-2xs uppercase tracking-widest font-bold mb-1">Posts</p>
+            <p class="text-3xl font-black" data-count-up="{{ post_count }}">{{ post_count }}</p>
         </div>
     </section>
 
@@ -238,4 +239,57 @@
         </div>
     </section>
 </main>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('engagementChart');
+    if (ctx && window.Chart) {
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: {{ views_chart_labels|safe }},
+                datasets: [{
+                    label: 'Views',
+                    data: {{ views_chart_data|safe }},
+                    borderColor: '#34d399',
+                    backgroundColor: 'rgba(52, 211, 153, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#34d399',
+                    pointBorderColor: '#34d399',
+                    pointRadius: 3,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleFont: { size: 12 },
+                        bodyFont: { size: 11 },
+                        padding: 10,
+                        cornerRadius: 12
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: { color: '#64748b', font: { size: 10 } }
+                    },
+                    y: {
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: { color: '#64748b', font: { size: 10 }, stepSize: 1 },
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
 {% endblock %}
