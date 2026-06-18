@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
@@ -9,52 +11,45 @@ from django.contrib.auth.views import (
     PasswordResetDoneView,
     PasswordResetView,
 )
-from django.db.models import Q, Sum
+from django.db import IntegrityError, transaction
+from django.db.models import F, Q, Sum
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.views.generic import CreateView, DeleteView, UpdateView
-from rest_framework import permissions, viewsets, filters
+from rest_framework import permissions, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
-from django_filters.rest_framework import DjangoFilterBackend
-
 from .audit import record_audit_event
-from .filters import PostFilter, ProjectFilter
 from .forms import PostForm, ProfileForm, ProjectForm, SignUpForm, TransactionLogForm
 from .jobs import enqueue_audit_export_job
 from .mixins import QueryValidationMixin
-from .models import AuditLog, BackgroundJob, Post, PostLike, PostMetric, Project, TransactionLog, Comment, Notification
+from .models import AuditLog, BackgroundJob, Comment, Notification, Post, PostLike, PostMetric, Project, TransactionLog
 from .permissions import IsOwnerObjectPermission
 from .serializers import (
     AuditLogSerializer,
     BackgroundJobSerializer,
+    CommentSerializer,
+    NotificationSerializer,
     PostSerializer,
     PostWriteSerializer,
     ProfileSerializer,
     ProjectSerializer,
     ProjectWriteSerializer,
     TransactionLogSerializer,
-    CommentSerializer,
-    NotificationSerializer,
 )
-from .services import bootstrap_demo_user
+from .services import get_or_bootstrap_demo_user
 from .throttling import ApiBurstThrottle, ApiWriteThrottle, check_ip_rate_limit
-
-
-def _ensure_bootstrap_data():
-    """Only bootstrap if it hasn't been done yet."""
-    bootstrap_demo_user()
 
 
 def _current_user(request):
     if request.user.is_authenticated:
         return request.user
-    _ensure_bootstrap_data()
-    return bootstrap_demo_user()
+    return get_or_bootstrap_demo_user()
 
 
 def _shared_page_context(request):
@@ -127,14 +122,14 @@ def dashboard_page(request):
 @login_required
 def audit_page(request):
     context = _shared_page_context(request)
-    logs = AuditLog.objects.filter(actor=request.user)
+    logs = AuditLog.objects.filter(actor=request.user).select_related("content_type", "actor")
     jobs = BackgroundJob.objects.filter(requested_by=request.user, job_type=BackgroundJob.JobType.AUDIT_EXPORT)[:10]
     action = request.GET.get("action")
     target_type = request.GET.get("target_type")
     if action in {choice for choice, _ in AuditLog.Action.choices}:
         logs = logs.filter(action=action)
     if target_type:
-        logs = logs.filter(target_type=target_type)
+        logs = logs.filter(content_type__model=target_type)
     context["audit_export_jobs"] = jobs
     context["audit_logs"] = logs[:50]
     return render(request, "devhub_app/audit_logs.html", context)
@@ -170,17 +165,21 @@ def transactions_page(request):
     if request.method == "POST":
         form = TransactionLogForm(request.POST)
         if form.is_valid():
-            transaction = form.save(commit=False)
-            transaction.user = request.user
-            transaction.save()
-            messages.success(request, "Transaction saved.")
-            return redirect("devhub_app:transactions")
+            try:
+                transaction = form.save(commit=False)
+                transaction.user = request.user
+                transaction.save()
+                messages.success(request, "Transaction saved.")
+                return redirect("devhub_app:transactions")
+            except IntegrityError:
+                form.add_error("transaction_id", "A transaction with this ID already exists.")
     else:
         form = TransactionLogForm()
     context["form"] = form
     return render(request, "devhub_app/transactions.html", context)
 
 
+@transaction.atomic
 def signup_page(request):
     if request.user.is_authenticated:
         return redirect("devhub_app:dashboard")
@@ -245,19 +244,19 @@ class DevHubPasswordResetCompleteView(PasswordResetCompleteView):
 @login_required
 def post_like_htmx(request, pk):
     post = get_object_or_404(Post, pk=pk)
-    like, created = PostLike.objects.get_or_create(user=request.user, post=post)
-    if created:
-        post.metrics.likes += 1
-        post.metrics.save(update_fields=["likes", "updated_at"])
+    like = PostLike.objects.filter(user=request.user, post=post).first()
+    if like:
+        like.delete()
+        PostMetric.objects.filter(post=post).update(likes=F("likes") - 1)
+    else:
+        PostLike.objects.create(user=request.user, post=post)
+        PostMetric.objects.filter(post=post).update(likes=F("likes") + 1)
+    post.refresh_from_db()
     return render(
         request,
         "devhub_app/partials/post_likes.html",
         {"post": post},
     )
-
-
-from django.utils import timezone
-from datetime import timedelta
 
 
 @api_view(["GET"])
@@ -322,7 +321,7 @@ def profile_skills_analytics(request):
 
 class OwnerQuerySetMixin(LoginRequiredMixin):
     def get_queryset(self):
-        return self.model.objects.filter(**{self.owner_field: self.request.user})
+        return super().get_queryset().filter(**{self.owner_field: self.request.user})
 
 
 class PostCreateView(LoginRequiredMixin, CreateView):
@@ -463,11 +462,7 @@ class PostViewSet(QueryValidationMixin, viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         post = serializer.save(author=self.request.user)
-        try:
-            PostMetric.objects.create(post=post)
-        except Exception as e:
-            # log or handle error
-            pass
+        PostMetric.objects.get_or_create(post=post)
         record_audit_event(
             actor=self.request.user, action=AuditLog.Action.CREATE, target=post, metadata={"source": "api"}
         )
@@ -543,7 +538,7 @@ class ProjectViewSet(QueryValidationMixin, viewsets.ModelViewSet):
 @api_view(["GET"])
 @permission_classes([permissions.IsAuthenticated])
 def audit_log_list(request):
-    logs = AuditLog.objects.filter(actor=request.user)
+    logs = AuditLog.objects.filter(actor=request.user).select_related("content_type", "actor")
     action = request.query_params.get("action")
     target_type = request.query_params.get("target_type")
     ordering = request.query_params.get("ordering")
@@ -553,8 +548,8 @@ def audit_log_list(request):
     if action in allowed_actions:
         logs = logs.filter(action=action)
     if target_type:
-        logs = logs.filter(target_type=target_type)
-    allowed_ordering = {"created_at", "-created_at", "target_type", "-target_type"}
+        logs = logs.filter(content_type__model=target_type)
+    allowed_ordering = {"created_at", "-created_at", "content_type__model", "-content_type__model"}
     if ordering and ordering not in allowed_ordering:
         raise ValidationError({"ordering": [f"Unsupported ordering '{ordering}'."]})
     if ordering in allowed_ordering:
@@ -681,7 +676,22 @@ class CommentViewSet(viewsets.ModelViewSet):
         return Comment.objects.filter(author=self.request.user)
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        comment = serializer.save(author=self.request.user)
+        record_audit_event(
+            actor=self.request.user, action=AuditLog.Action.CREATE, target=comment, metadata={"source": "api"}
+        )
+
+    def perform_update(self, serializer):
+        comment = serializer.save()
+        record_audit_event(
+            actor=self.request.user, action=AuditLog.Action.UPDATE, target=comment, metadata={"source": "api"}
+        )
+
+    def perform_destroy(self, instance):
+        record_audit_event(
+            actor=self.request.user, action=AuditLog.Action.DELETE, target=instance, metadata={"source": "api"}
+        )
+        instance.delete()
 
 
 class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
