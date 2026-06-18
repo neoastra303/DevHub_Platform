@@ -390,3 +390,71 @@ body {
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
+
+/* ─── Accessibility ─── */
+/* Focus styles for keyboard navigation */
+*:focus-visible {
+    outline: 2px solid #73f5c8;
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+/* Skip to main content link */
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: #73f5c8;
+    color: #08111b;
+    padding: 8px 16px;
+    z-index: 100;
+    font-weight: 700;
+    transition: top 0.2s;
+}
+
+.skip-link:focus {
+    top: 0;
+}
+
+/* Screen reader only text */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Improved contrast for small text */
+.text-2xs {
+    font-size: 0.625rem;
+    line-height: 1rem;
+    color: #94a3b8; /* Improved from slate-500 for better contrast */
+}
+
+/* Ensure interactive elements have sufficient contrast */
+button, a {
+    color: inherit;
+}
+
+button:disabled, a:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    
+    .animate-in {
+        animation: none !important;
+    }
+}
